@@ -42,6 +42,7 @@ button.sm{padding:6px 10px;font-size:13px}button:active{transform:scale(.97)}
 .key.k1{background:#00c2ff22;color:#8fe9ff;border-color:#00c2ff88}
 .item.kr,tr.kr td{background:#ffd1660d}
 .same{margin-top:8px;padding:6px 8px;border-radius:8px;background:#00c2ff14;border:1px solid #00c2ff55;font-size:13px;font-weight:600;color:#8fe9ff;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.chips{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;margin:0 0 12px}.chip{padding:6px 0;font-size:12px;border-radius:8px}.chip.f{background:#34d97f22;border-color:#34d97f88;color:#9ff0c2}.chip.on{outline:2px solid var(--acc2)}
 .legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--mut);align-items:center;margin-bottom:8px}.legend span{display:inline-flex;align-items:center;gap:4px}
 .list{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow:auto}
 .item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:#0d0a1c88;border:1px solid var(--line);border-radius:12px}
@@ -73,6 +74,7 @@ details summary{cursor:pointer;color:#c9b8ff;font-weight:600}details li{margin:4
   <div class="racehead"><button id="prev" aria-label="Corsa precedente">‹</button>
    <div class="num">#<span id="rn">1</span><small id="rt"></small></div>
    <button id="nextr" aria-label="Corsa successiva">›</button></div>
+  <div class="chips" id="chips"></div>
   <div class="places">
    <div class="p1"><label>🥇 1° arrivato<input id="n1" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off"></label></div>
    <div class="p2"><label>🥈 2° arrivato<input id="n2" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off"></label></div>
@@ -83,9 +85,9 @@ details summary{cursor:pointer;color:#c9b8ff;font-weight:600}details li{margin:4
  </div>
  <div class="card next" id="nextbox"></div>
  <div class="card"><h2>Cicli della giornata</h2><div id="cycles"></div></div>
- <div class="card"><h2>Corse inserite · <span id="cnt">0</span>/99</h2><div class="list" id="entered"></div></div>
+ <div class="card"><h2>Corse inserite · <span id="cnt">0</span>/9</h2><div class="list" id="entered"></div></div>
  <div class="card"><details><summary>📖 Regole del sistema Trio (cavalli)</summary>
-  <p class="mut" style="font-size:14px">Ciclo di <b>33 corse</b> (3 sottocicli da 11). <b>Y</b> = trio della 1ª corsa del ciclo · <b>2° D</b> = trio della 1ª corsa del 2° sottociclo · <b>3° D</b> = trio della 1ª corsa del 3° sottociclo. Si gioca alla <b>corsa di fine ciclo</b> (inizio + 33): preso se un numero giocato arriva nei primi 3. Con 99 corse al giorno si giocano i cicli 1→34 e 34→67; il ciclo da 67 finirebbe alla 100 e non si gioca.</p>
+  <p class="mut" style="font-size:14px">Ciclo di <b>33 corse</b> (3 sottocicli da 11). <b>Y</b> = trio della 1ª corsa del ciclo · <b>2° D</b> = trio della 1ª corsa del 2° sottociclo · <b>3° D</b> = trio della 1ª corsa del 3° sottociclo. Si gioca alla <b>corsa di fine ciclo</b> (inizio + 33): preso se un numero giocato arriva nei primi 3. Si inseriscono solo le corse chiave 1, 12, 23, 34, 45, 56, 67, 78, 89. Cicli: 1→34, 34→67, 67→1 del giorno dopo (la corsa 100 è la corsa 1 del giorno successivo).</p>
   <p style="font-size:14px"><b>Regola base</b> (Y contro un riferimento): 3 in comune → nullo · 2 → il numero nuovo del riferimento · 1 → quel numero · 0 → nullo.</p>
   <ul>
   <li><b>R4</b> entrambi i D nulli → non si gioca; un D nullo per 3 uguali → regola base sull'altro.</li>
@@ -116,6 +118,7 @@ details summary{cursor:pointer;color:#c9b8ff;font-weight:600}details li{margin:4
 <script>
 "use strict";
 const MAX=99, SUB=11, PER=3, L=SUB*PER, KEY="gbcavalli_v1";
+const KEYS=[1,12,23,34,45,56,67,78,89];
 const $=id=>document.getElementById(id);
 // ---- orari (dalle ancore certe del file originale, entro la 99) ----
 const TIMES={1:"00:04",10:"00:58",28:"10:36",37:"11:30",55:"13:18",64:"14:08",82:"15:20",91:"15:56"};
@@ -128,8 +131,12 @@ const persist=()=>localStorage.setItem(KEY,JSON.stringify(DB));
 const today=()=>{const d=new Date();return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())};
 let DAY=today(), RACE=1, STDAY=null;
 const entries=d=>(DB.days[d]&&DB.days[d].entries)||{};
+const nextDay=d=>{const[y,m,g]=d.split("-").map(Number);const t=new Date(y,m-1,g+1);return t.getFullYear()+"-"+pad(t.getMonth()+1)+"-"+pad(t.getDate())};
+// corsa 100 = corsa 1 del giorno dopo
+const dayEx=d=>{const E=Object.assign({},entries(d)),n=entries(nextDay(d))[1];if(n)E[MAX+1]=n;else delete E[MAX+1];return E};
+let CUR=null;const tgtLbl=n=>n>MAX?"#1 di domani":"#"+n;
 // ---- regole (porting fedele da goldbet_online.jsx) ----
-function makeCycles(){const o=[];for(let s=1,i=0;s+L<=MAX;s+=L,i++)o.push({i,start:s,rifBase:s+SUB,thirdBase:s+2*SUB,target:s+L});return o}
+function makeCycles(){const o=[];for(let s=1,i=0;s<=MAX-2*SUB;s+=L,i++)o.push({i,start:s,rifBase:s+SUB,thirdBase:s+2*SUB,target:s+L});return o}
 const complete=e=>e&&[e.n1,e.n2,e.n3].every(v=>v!==""&&v!=null);const trioOf=e=>[+e.n1,+e.n2,+e.n3];
 const inter=(a,b)=>a.filter(n=>b.includes(n)),diff=(a,b)=>a.filter(n=>!b.includes(n));
 function baseRule(Y,ref){const c=inter(Y,ref);if(c.length===3)return{plays:[],why:"riferimento nullo"};if(c.length===2)return{plays:diff(ref,Y),why:"2 in comune: il numero nuovo del riferimento"};if(c.length===1)return{plays:[c[0]],why:"1 in comune: si gioca quello"};return{plays:[],why:"0 in comune: riferimento nullo"}}
@@ -165,41 +172,43 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 function cycleCard(c,E){const r=c.r;let state,body="";
  if(!r){state=`<span class="pill wait">mancano: ${c.missing.map(n=>"#"+n).join(", ")}</span>`}
  else if(!r.plays.length){state=`<span class="pill wait">non si gioca</span>`}
- else if(c.hit===null){state=`<span class="pill" style="color:var(--gold)">da giocare alla #${c.target}</span>`}
+ else if(c.hit===null){state=`<span class="pill" style="color:var(--gold)">da giocare alla ${tgtLbl(c.target)}</span>`}
  else state=c.hit?`<span class="pill ok">PRESO${c.pos?" · "+c.pos+"°":""}</span>`:`<span class="pill ko">PERSO</span>`;
- const Y=trioAt(E,c.start),cell=(lab,n,h=[])=>`<div>${lab} <span class="mut">#${n}</span><b>${complete(E[n])?balls(trioOf(E[n]),h,false,yOf(E,n),true):"—"}</b></div>`;
- body=`<div class="steps">${cell("Y",c.start)}${cell("2° D",c.rifBase)}${cell("3° D",c.thirdBase)}${cell("Gioco",c.target,r&&r.plays.length?r.plays:[])}</div>`;
+ const Y=trioAt(E,c.start),cell=(lab,n,h=[])=>`<div>${lab} <span class="mut">${n>MAX?"#1":"#"+n}</span><b>${complete(E[n])?balls(trioOf(E[n]),h,false,yOf(E,n),true):"—"}</b></div>`;
+ body=`<div class="steps">${cell("Y",c.start)}${cell("2° D",c.rifBase)}${cell("3° D",c.thirdBase)}${cell(c.target>MAX?"Gioco (domani)":"Gioco",c.target,r&&r.plays.length?r.plays:[])}</div>`;
  body+=sameLine(E,c.start);if(r)body+=`<div class="why"><b class="gold">${r.rule}</b> · ${esc(r.why)} (Y∩2°D=${r.m2}, Y∩3°D=${r.m3})${r.plays.length?` → gioca ${balls(r.plays,complete(E[c.target])?trioOf(E[c.target]):[],false)}`:""}${r.ambiguous?` <span class="mut">· A: ${r.playsA.join(",")}${c.hA!==null?(c.hA?" ✓":" ✗"):""} · B: ${r.playsB.join(",")}${c.hB!==null?(c.hB?" ✓":" ✗"):""}</span>`:""}</div>`;
- return `<div class="cyc"><div class="h"><b>Ciclo ${c.i+1} <span class="mut" style="font-weight:400">#${c.start}→#${c.target}</span></b>${state}</div>${body}</div>`}
+ return `<div class="cyc"><div class="h"><b>Ciclo ${c.i+1} <span class="mut" style="font-weight:400">#${c.start}→${c.target>MAX?"#1 di domani":"#"+c.target}</span></b>${state}</div>${body}</div>`}
 // ---- schermata inserimento ----
 const ins=[$("n1"),$("n2"),$("n3")];
 function loadRace(){const E=entries(DAY),e=E[RACE];$("rn").textContent=RACE;$("rt").innerHTML=fmtT(RACE);
  ins.forEach((x,i)=>x.value=e?e["n"+(i+1)]:"");$("del").classList.toggle("hide",!e);$("err").textContent="";$("save").firstChild.textContent=e?"Aggiorna e vai alla prossima ⏎":"Salva e vai alla prossima ⏎"}
-function firstEmpty(){const E=entries(DAY);for(let i=1;i<=MAX;i++)if(!E[i])return i;return MAX}
-function go(n){RACE=Math.max(1,Math.min(MAX,n));loadRace();ins[0].focus()}
-function saveRace(){const v=ins.map(x=>x.value.trim());if(v.some(x=>!/^\d{1,2}$/.test(x)||+x<1)){$("err").textContent="Inserisci tre numeri validi (1–99)";return}
+function firstEmpty(){const E=entries(DAY);return KEYS.find(k=>!E[k])||KEYS[KEYS.length-1]}
+function go(n){if(!KEYS.includes(n))return;RACE=n;loadRace();renderChips();ins[0].focus()}
+const step=d=>{const i=KEYS.indexOf(RACE)+d;if(i>=0&&i<KEYS.length)go(KEYS[i])};
+function renderChips(){const E=entries(DAY);$("chips").innerHTML=KEYS.map(k=>`<button class="chip ${E[k]?"f":""} ${k===RACE?"on":""}" data-go="${k}">${k}${E[k]?" ✓":""}</button>`).join("")}
+function saveRace(){if(!KEYS.includes(RACE)){$("err").textContent="Si inseriscono solo le corse "+KEYS.join(", ");return}const v=ins.map(x=>x.value.trim());if(v.some(x=>!/^\d{1,2}$/.test(x)||+x<1)){$("err").textContent="Inserisci tre numeri validi (1–99)";return}
  if(new Set(v).size<3){$("err").textContent="I tre numeri devono essere diversi";return}
  DB.days[DAY]=DB.days[DAY]||{entries:{}};DB.days[DAY].entries[RACE]={n1:+v[0],n2:+v[1],n3:+v[2]};persist();renderMain();
- if(RACE<MAX)go(RACE+1);else loadRace()}
+ if(RACE!==KEYS[KEYS.length-1])step(1);else{loadRace();renderChips()}}
 function delRace(){const E=entries(DAY);if(!E[RACE])return;if(!confirm("Eliminare la corsa #"+RACE+"?"))return;delete E[RACE];if(!Object.keys(E).length)delete DB.days[DAY];persist();renderMain();loadRace()}
-function renderMain(){const E=entries(DAY),cs=resolve(E),ro=roles();
+function renderMain(){const E=dayEx(DAY),cs=resolve(E),ro=roles();renderChips();
  // prossima giocata
  const pend=cs.filter(c=>c.r&&c.r.plays.length&&c.hit===null);
  let h="";
- if(pend.length){h=pend.map(c=>`<h2>🎯 Prossima giocata · ciclo ${c.i+1}</h2><div class="row" style="justify-content:space-between"><div>${balls(c.r.plays,[],false)}<div class="mut" style="font-size:13px;margin-top:6px">Regola <b class="gold">${c.r.rule}</b> · ${esc(c.r.why)}</div></div><div style="text-align:right"><div class="big">#${c.target}</div><div class="mut">${fmtT(c.target)}</div></div></div>`).join("<hr style='border-color:#ffffff22'>")}
+ if(pend.length){h=pend.map(c=>`<h2>🎯 Prossima giocata · ciclo ${c.i+1}${c.target>MAX?" · Gioca sulla corsa 1 di domani ("+fmtDay(nextDay(DAY))+")":""}</h2><div class="row" style="justify-content:space-between"><div>${balls(c.r.plays,[],false)}<div class="mut" style="font-size:13px;margin-top:6px">Regola <b class="gold">${c.r.rule}</b> · ${esc(c.r.why)}</div></div><div style="text-align:right">${c.target>MAX?`<div class="big">#1</div><div class="mut">corsa 1 di domani (${fmtDay(nextDay(DAY))})</div>`:`<div class="big">#${c.target}</div><div class="mut">${fmtT(c.target)}</div>`}</div></div>`).join("<hr style='border-color:#ffffff22'>")}
  else{const w=cs.find(c=>!c.r);if(w)h=`<h2>🎯 Prossima giocata</h2><div>In attesa dei dati del ciclo ${w.i+1}: servono le corse <b>${w.missing.map(n=>"#"+n).join(", ")}</b>.</div>`;
-  else h=`<h2>🎯 Giornata completata</h2><div class="mut">Tutti i cicli giocabili (fino alla #99) sono stati valutati. Vedi le Statistiche.</div>`}
+  else h=`<h2>🎯 Giornata completata</h2><div class="mut">Tutti i cicli della giornata sono stati valutati (il 3° con la corsa 1 del giorno dopo). Vedi le Statistiche.</div>`}
  $("nextbox").innerHTML=h;
- $("cycles").innerHTML=LEGEND+cs.map(c=>cycleCard(c,E)).join("")+`<div class="mut" style="font-size:12px;margin-top:8px">Il ciclo #67→#100 non si gioca (oltre la corsa 99).</div>`;
- const ks=Object.keys(E).map(Number).sort((a,b)=>b-a);$("cnt").textContent=ks.length;
+ $("cycles").innerHTML=LEGEND+cs.map(c=>cycleCard(c,E)).join("")+`<div class="mut" style="font-size:12px;margin-top:8px">Il ciclo 3 (#67) si gioca sulla corsa 1 del giorno dopo (corsa 100).</div>`;
+ const ks=Object.keys(E).map(Number).filter(k=>KEYS.includes(k)).sort((a,b)=>b-a);$("cnt").textContent=ks.length;
  $("entered").innerHTML=ks.length?LEGEND+ks.map(n=>`<div class="item ${keyLabel(n)?"kr":""}" data-r="${n}"><span class="rn">#${n}</span><span class="t">${fmtT(n)}</span><span class="sp">${balls(trioOf(E[n]),[],true,yOf(E,n))} ${keyLabel(n)}${ro[n]?` <span class="tag">${ro[n].join(" · ")}</span>`:""}</span><button class="sm" data-edit="${n}">✏️</button><button class="sm ghost" data-del="${n}">🗑</button></div>`).join(""):`<div class="empty">Nessuna corsa inserita per questa giornata.</div>`}
 // ---- statistiche ----
 function renderStats(){const ds=Object.keys(DB.days).sort().reverse();if(!STDAY||!DB.days[STDAY])STDAY=DB.days[DAY]?DAY:ds[0]||null;
- $("days").innerHTML=ds.length?ds.map(d=>`<button class="sm ${d===STDAY?"on":""}" data-day="${d}">${fmtDay(d)} · ${Object.keys(entries(d)).length}</button>`).join(""):`<div class="empty">Nessuna giornata salvata.</div>`;
- const E=STDAY?entries(STDAY):{},cs=resolve(E),ro=roles();$("sttitle").textContent="Riepilogo"+(STDAY?" · "+fmtDay(STDAY):"");
- const played=cs.filter(c=>c.hit!==null),w=played.filter(c=>c.hit).length,l=played.length-w,skip=cs.filter(c=>c.r&&!c.r.plays.length).length,ks=Object.keys(E).map(Number).sort((a,b)=>a-b);
+ $("days").innerHTML=ds.length?ds.map(d=>`<button class="sm ${d===STDAY?"on":""}" data-day="${d}">${fmtDay(d)} · ${Object.keys(entries(d)).filter(k=>KEYS.includes(+k)).length}/9</button>`).join(""):`<div class="empty">Nessuna giornata salvata.</div>`;
+ const E=STDAY?dayEx(STDAY):{},cs=resolve(E),ro=roles();$("sttitle").textContent="Riepilogo"+(STDAY?" · "+fmtDay(STDAY):"");
+ const played=cs.filter(c=>c.hit!==null),w=played.filter(c=>c.hit).length,l=played.length-w,skip=cs.filter(c=>c.r&&!c.r.plays.length).length,ks=Object.keys(E).map(Number).filter(k=>KEYS.includes(k)).sort((a,b)=>a-b);
  const st=(v,lab,cls="")=>`<div class="stat"><b class="${cls}">${v}</b><span>${lab}</span></div>`;
- $("summary").innerHTML=st(ks.length+"/99","corse")+st(played.length,"giocate")+st(w,"prese","ok")+st(l,"perse","ko")+st(played.length?Math.round(w/played.length*100)+"%":"—","resa","gold")+st(skip,"non giocati")+st(played.filter(c=>c.pos===1).length,"vinte al 1°");
+ $("summary").innerHTML=st(ks.length+"/9","corse")+st(played.length,"giocate")+st(w,"prese","ok")+st(l,"perse","ko")+st(played.length?Math.round(w/played.length*100)+"%":"—","resa","gold")+st(skip,"non giocati")+st(played.filter(c=>c.pos===1).length,"vinte al 1°");
  $("stcycles").innerHTML=LEGEND+cs.map(c=>cycleCard(c,E)).join("");
  const f={},f1={};ks.forEach(k=>{trioOf(E[k]).forEach((n,i)=>{f[n]=(f[n]||0)+1;if(!i)f1[n]=(f1[n]||0)+1})});
  const top=Object.keys(f).map(Number).sort((a,b)=>f[b]-f[a]||a-b).slice(0,10),mx=top.length?f[top[0]]:1;
@@ -210,7 +219,7 @@ function renderStats(){const ds=Object.keys(DB.days).sort().reverse();if(!STDAY|
 const fmtDay=d=>{const[y,m,g]=d.split("-");return g+"/"+m+"/"+y};
 // ---- eventi ----
 $("day").value=DAY;$("day").addEventListener("change",e=>{if(!e.target.value)return;DAY=e.target.value;STDAY=DAY;RACE=firstEmpty();renderMain();loadRace();if(!$("v-stats").classList.contains("hide"))renderStats()});
-$("prev").onclick=()=>go(RACE-1);$("nextr").onclick=()=>go(RACE+1);$("save").onclick=saveRace;$("del").onclick=delRace;
+$("prev").onclick=()=>step(-1);$("nextr").onclick=()=>step(1);$("chips").addEventListener("click",e=>{const t=e.target.closest("[data-go]");if(t)go(+t.dataset.go)});$("save").onclick=saveRace;$("del").onclick=delRace;
 ins.forEach((x,i)=>{x.addEventListener("input",()=>{x.value=x.value.replace(/\D/g,"").slice(0,2);$("err").textContent="";if(x.value.length===2&&i<2)ins[i+1].focus()});
  x.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();if(i<2&&x.value)ins[i+1].focus();else saveRace()}else if(e.key===" "&&i<2){e.preventDefault();ins[i+1].focus()}else if(e.key==="Backspace"&&!x.value&&i>0){ins[i-1].focus()}})});
 $("entered").addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;if(t.dataset.edit)go(+t.dataset.edit);else if(t.dataset.del){RACE=+t.dataset.del;delRace()}});
