@@ -104,6 +104,9 @@ details summary{cursor:pointer;color:#c9b8ff;font-weight:600}details li{margin:4
 <!-- ============ STATISTICHE ============ -->
 <section id="v-stats" class="hide">
  <div class="card"><h2>Giornate salvate</h2><div class="days" id="days"></div></div>
+ <div class="card" id="movecard"><div class="row"><button id="mvbtn">📅 Sposta in un'altra data</button>
+  <span id="mvbox" class="row hide"><input type="date" id="mvdate" aria-label="Nuova data"><button class="pri sm" id="mvgo">Sposta</button><button class="ghost sm" id="mvx">Annulla</button></span></div>
+  <div class="mut" style="font-size:12px;margin-top:6px">Sposta tutte le corse della giornata selezionata su un'altra data.</div></div>
  <div class="card"><h2 id="sttitle">Riepilogo</h2><div class="stats" id="summary"></div></div>
  <div class="card"><h2>Esiti del finder</h2><div id="stcycles"></div></div>
  <div class="card"><h2>Numeri più frequenti</h2><div id="freq"></div></div>
@@ -231,5 +234,15 @@ $("impb").onclick=()=>$("impf").click();
 $("impf").onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const d=JSON.parse(t);if(!d||typeof d.days!=="object")throw 0;const n=Object.keys(d.days).length;
  if(!confirm("Importare "+n+" giornate? Le giornate con la stessa data verranno sostituite."))return;Object.assign(DB.days,d.days);persist();renderMain();loadRace();renderStats();alert("Importate "+n+" giornate")}catch(x){alert("File JSON non valido")}e.target.value=""})};
 $("delday").onclick=()=>{if(!STDAY||!confirm("Eliminare tutte le corse del "+fmtDay(STDAY)+"?"))return;delete DB.days[STDAY];STDAY=null;persist();renderStats();renderMain();loadRace()};
+$("mvbtn").onclick=()=>{if(!STDAY){alert("Nessuna giornata selezionata");return}$("mvdate").value=STDAY;$("mvbox").classList.remove("hide")};
+$("mvx").onclick=()=>$("mvbox").classList.add("hide");
+$("mvgo").onclick=()=>{const to=$("mvdate").value,from=STDAY;if(!to||!from)return;if(to===from){alert("Scegli una data diversa");return}
+ const src=entries(from),tgt=entries(to),sk=Object.keys(src),tk=Object.keys(tgt);
+ if(tk.length){if(!confirm(`Il ${fmtDay(to)} ha già ${tk.length} corse. Vuoi unire le corse del ${fmtDay(from)} a quelle esistenti?`))return;
+  const both=sk.filter(k=>tgt[k]);if(both.length&&!confirm(`Le corse ${both.map(k=>"#"+k).join(", ")} esistono in entrambe le date. Sovrascriverle con quelle del ${fmtDay(from)}? (Annulla = non spostare nulla)`))return}
+ else if(!confirm(`Spostare ${sk.length} corse dal ${fmtDay(from)} al ${fmtDay(to)}?`))return;
+ DB.days[to]={entries:Object.assign({},tgt,src)};delete DB.days[from];persist();
+ STDAY=to;if(DAY===from){DAY=to;$("day").value=to;RACE=firstEmpty()}
+ $("mvbox").classList.add("hide");renderStats();renderMain();loadRace();alert(`Corse spostate al ${fmtDay(to)}`)};
 RACE=firstEmpty();renderMain();loadRace();
 </script></body></html>
