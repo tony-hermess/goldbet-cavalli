@@ -53,6 +53,8 @@ button.sm{padding:6px 10px;font-size:13px}button:active{transform:scale(.97)}
 .res .rt{font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
 .resrow{display:flex;justify-content:space-between;gap:8px}.playballs .ball{width:38px;height:38px;font-size:17px}.pr{font-size:20px;font-weight:800}
 .rstate{margin-top:8px;text-align:center}.rstate .pill{font-size:14px;padding:5px 14px}
+.fgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.fgrid label{font-size:12px;color:var(--mut);display:flex;flex-direction:column;gap:3px}.fgrid select,.fgrid input{width:100%}
+#fchips .chip{padding:8px 12px;font-size:14px}#fchips .chip.on{background:var(--acc);border-color:var(--acc)}#fpat tr{cursor:pointer}#fpat tr.on td{background:#7c5cff33}
 .legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--mut);align-items:center;margin-bottom:8px}.legend span{display:inline-flex;align-items:center;gap:4px}
 .list{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow:auto}
 .item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:#0d0a1c88;border:1px solid var(--line);border-radius:12px}
@@ -124,8 +126,23 @@ details summary{cursor:pointer;color:#c9b8ff;font-weight:600}details li{margin:4
   <input type="file" id="impf" accept="application/json,.json" class="hide"><button id="delday" class="ghost ko">Elimina giornata</button></div>
   <p class="mut" style="font-size:12px">I dati restano solo in questo browser (localStorage). Esporta per fare un backup o passarli su un altro dispositivo.</p></div>
 </section>
+<section id="v-filt" class="hide">
+ <div class="card"><h2>Schemi rapidi · uguali alla 1ª (2ª-3ª)</h2>
+  <div class="row" id="fchips"></div>
+  <label class="row" style="margin-top:8px;font-size:14px"><input type="checkbox" id="fexact" style="width:auto"> ordine esatto (2ª-3ª)</label></div>
+ <div class="card"><h2>Filtri</h2><div class="fgrid">
+  <label>2ª uguali<select id="fa"></select></label><label>3ª uguali<select id="fb"></select></label><label>Ultima uguali<select id="fu"></select></label>
+  <label>Ciclo<select id="fc"><option value="">tutti</option><option>1</option><option>2</option><option>3</option></select></label>
+  <label>Regola<select id="fr"></select></label>
+  <label>Esito<select id="fo"><option value="">tutti</option><option>PRESO</option><option>PERSO</option><option>non si gioca</option><option>da giocare</option></select></label>
+  <label>Dal<input type="date" id="fd1"></label><label>Al<input type="date" id="fd2"></label></div>
+  <div class="row" style="margin-top:8px"><button class="sm" id="freset">↺ Azzera filtri</button></div></div>
+ <div class="card"><h2>Tutti gli schemi</h2><div style="overflow:auto"><table id="fpat"></table></div><div class="mut" style="font-size:12px;margin-top:6px">Tocca una riga per filtrare. Conteggi su tutte le giornate salvate (cicli con 1ª, 2ª e 3ª inserite).</div></div>
+ <div class="card"><h2>Totali del filtro</h2><div class="stats" id="ftot"></div></div>
+ <div class="card"><h2>Cicli trovati · <span id="fn">0</span></h2><div id="flist"></div></div>
+</section>
 </main>
-<nav><button id="t-main" class="on">✍️ Inserisci</button><button id="t-stats">📊 Statistiche</button></nav>
+<nav><button id="t-main" class="on">✍️ Inserisci</button><button id="t-stats">📊 Statistiche</button><button id="t-filt">🔍 Filtri</button></nav>
 <script>
 "use strict";
 const MAX=99, SUB=11, PER=3, L=SUB*PER, KEY="gbcavalli_v1";
@@ -181,19 +198,19 @@ function sameLine(E,a){const Y=trioAt(E,a);if(!Y.length)return `<div class="same
 function keyLabel(r){const k=REFK.indexOf((r-1)%L);if(k<0)return"";return `<span class="key ${k?"":"k1"}">${k===3?"Ultima del ciclo":REFN[k]+" del ciclo"}</span>`}
 const LEGEND=`<div class="legend"><span><span class="ball y s">7</span> uguale alla 1ª del ciclo (nella 1ª: numeri ripetuti)</span><span><span class="ball hit s">7</span> giocato e uscito</span><span><span class="ball hit y s">7</span> entrambi</span></div>`;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-function cycleCard(c,E,edit){const r=c.r,a=c.start,tom=c.target>MAX;let state;
+function cycleCard(c,E,edit,dd){const r=c.r,a=c.start,tom=c.target>MAX;let state;
  if(!r)state=`<span class="pill wait">mancano: ${c.missing.map(n=>"#"+n).join(", ")}</span>`;
  else if(!r.plays.length)state=`<span class="pill wait">NON SI GIOCA</span>`;
  else if(c.hit===null)state=`<span class="pill" style="color:var(--gold)">DA GIOCARE</span>`;
  else state=c.hit?`<span class="pill ok">PRESO${c.pos?" · "+c.pos+"°":""}</span>`:`<span class="pill ko">PERSO</span>`;
  const refs=REFK.map((o,i)=>{const n=a+o,e=E[n];return `<${edit?"button":"div"} class="ref ${i?"":"r1"} ${edit&&n===RACE?"cur":""}" ${edit?`data-go="${n}"`:""}><span class="rl">${REFN[i]}</span><span class="rr">#${n} · ${fmtT(n)}</span><span class="rb">${complete(e)?balls(trioOf(e),[],true,yOf(E,n),true):'<span class="mut">—</span>'}</span></${edit?"button":"div"}>`}).join("");
- const pe=E[c.target],playLbl=tom?`#1 di domani <span class="mut">(${fmtDay(nextDay(edit?DAY:STDAY))})</span>`:`#${c.target} <span class="mut">${fmtT(c.target)}</span>`;
+ const pe=E[c.target],playLbl=tom?`#1 di domani <span class="mut">(${fmtDay(nextDay(dd||(edit?DAY:STDAY)))})</span>`:`#${c.target} <span class="mut">${fmtT(c.target)}</span>`;
  let res;
  if(!r)res=`<div class="mut">Servono le corse ${c.missing.map(n=>"#"+n).join(", ")} per calcolare la giocata.</div>`;
  else res=`<div class="resrow"><div><div class="rl">Da giocare</div>${r.plays.length?`<div class="playballs">${balls(r.plays,complete(pe)?trioOf(pe):[],false)}</div>`:'<div class="mut">nessun numero</div>'}</div>
   <div style="text-align:right"><div class="rl">Corsa di gioco</div><div class="pr">${playLbl}</div><div>${complete(pe)?balls(trioOf(pe),r.plays,true,[],true):'<span class="mut">arrivo non inserito</span>'}</div></div></div>
   <div class="why"><b class="gold">${r.rule}</b> · ${esc(r.why)} <span class="mut">(Y∩2ª=${r.m2}, Y∩3ª=${r.m3})</span>${r.ambiguous?`<br><span class="mut">R8 in prova · A: ${r.playsA.join(",")}${c.hA!==null?(c.hA?" ✓":" ✗"):""} · B: ${r.playsB.join(",")}${c.hB!==null?(c.hB?" ✓":" ✗"):""}</span>`:""}</div>`;
- return `<div class="cblock"><div class="ch"><div><b>Ciclo ${c.i+1}</b> <span class="mut">corse ${a}→${a+L-1}</span></div>${state}</div>
+ return `<div class="cblock"><div class="ch"><div>${dd?`<span class="key k1">${fmtDay(dd)}</span> `:""}<b>Ciclo ${c.i+1}</b> <span class="mut">corse ${a}→${a+L-1}</span></div>${state}</div>
  <div class="refs">${refs}</div>${sameLine(E,a)}
  <div class="res"><div class="rt">🎯 Risultato</div>${res}<div class="rstate">${state}</div></div></div>`}
 // ---- schermata inserimento ----
@@ -239,8 +256,34 @@ ins.forEach((x,i)=>{x.addEventListener("input",()=>{x.value=x.value.replace(/\D/
  x.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();if(i<2&&x.value)ins[i+1].focus();else saveRace()}else if(e.key===" "&&i<2){e.preventDefault();ins[i+1].focus()}else if(e.key==="Backspace"&&!x.value&&i>0){ins[i-1].focus()}})});
 $("cycles").addEventListener("click",e=>{const t=e.target.closest("[data-go]");if(t){go(+t.dataset.go);scrollTo({top:0,behavior:"smooth"})}});
 $("days").addEventListener("click",e=>{const t=e.target.closest("button[data-day]");if(t){STDAY=t.dataset.day;renderStats()}});
-function tab(s){$("v-main").classList.toggle("hide",s);$("v-stats").classList.toggle("hide",!s);$("t-main").classList.toggle("on",!s);$("t-stats").classList.toggle("on",s);if(s)renderStats();window.scrollTo(0,0)}
-$("t-main").onclick=()=>tab(false);$("t-stats").onclick=()=>tab(true);
+function tab(v){["main","stats","filt"].forEach(k=>{$("v-"+k).classList.toggle("hide",k!==v);$("t-"+k).classList.toggle("on",k===v)});if(v==="stats")renderStats();if(v==="filt")renderFilt();window.scrollTo(0,0)}
+$("t-main").onclick=()=>tab("main");$("t-stats").onclick=()=>tab("stats");$("t-filt").onclick=()=>tab("filt");
+// ---- filtri ----
+let FP=null;const PATS=["1-0","1-1","2-0","2-1","2-2","0-0","3-x"];
+const cnt1=(E,a,n)=>complete(E[n])?trioAt(E,n).filter(x=>trioAt(E,a).includes(x)).length:null;
+const outc=c=>c.hit===true?"PRESO":c.hit===false?"PERSO":c.r&&!c.r.plays.length?"non si gioca":"da giocare";
+function allCycles(){const out=[];Object.keys(DB.days).sort().forEach(d=>{const E=dayEx(d);resolve(E).forEach(c=>{const a=c.start;if(!complete(E[a])||!complete(E[a+SUB])||!complete(E[a+2*SUB]))return;
+ out.push({d,c,E,a:cnt1(E,a,a+SUB),b:cnt1(E,a,a+2*SUB),u:cnt1(E,a,a+L-1),o:outc(c),rule:c.r?c.r.rule:""})})});return out}
+const patOf=(x,ex)=>ex?x.a+"-"+x.b:Math.max(x.a,x.b)+"-"+Math.min(x.a,x.b);
+function matchPat(x,p,ex){if(p==="3-x")return x.a===3||x.b===3;return patOf(x,ex)===p}
+function fillSel(){const o=v=>`<option value="">qualsiasi</option>`+[0,1,2,3].map(n=>`<option>${n}</option>`).join("");["fa","fb","fu"].forEach(id=>{if(!$(id).options.length)$(id).innerHTML=o()});
+ const rs=[...new Set(allCycles().map(x=>x.rule).filter(Boolean))].sort(),cur=$("fr").value;$("fr").innerHTML=`<option value="">tutte</option>`+rs.map(r=>`<option ${r===cur?"selected":""}>${r}</option>`).join("")}
+function renderFilt(){fillSel();const ex=$("fexact").checked,all=allCycles(),g=id=>$(id).value;
+ $("fchips").innerHTML=`<button class="chip ${FP?"":"on"}" data-p="">tutti</button>`+PATS.map(p=>`<button class="chip ${FP===p?"on":""}" data-p="${p}">${p}</button>`).join("");
+ const base=all.filter(x=>(!g("fa")||x.a===+g("fa"))&&(!g("fb")||x.b===+g("fb"))&&(!g("fu")||x.u===+g("fu"))&&(!g("fc")||x.c.i+1===+g("fc"))&&(!g("fr")||x.rule===g("fr"))&&(!g("fo")||x.o===g("fo"))&&(!g("fd1")||x.d>=g("fd1"))&&(!g("fd2")||x.d<=g("fd2")));
+ const P={};base.forEach(x=>{const k=patOf(x,ex);(P[k]=P[k]||[]).push(x)});
+ const tot=xs=>{const pl=xs.filter(x=>x.c.hit!==null),w=pl.filter(x=>x.c.hit).length;return{n:xs.length,pl:pl.length,w,l:pl.length-w,ns:xs.filter(x=>x.o==="non si gioca").length,dg:xs.filter(x=>x.o==="da giocare").length,wr:pl.length?Math.round(w/pl.length*100)+"%":"—"}};
+ const keys=Object.keys(P).sort((a,b)=>P[b].length-P[a].length||a.localeCompare(b));
+ $("fpat").innerHTML=keys.length?`<tr><th>Schema ${ex?"(2ª-3ª)":""}</th><th>Cicli</th><th>Giocati</th><th>Presi</th><th>Resa</th></tr>`+keys.map(k=>{const t=tot(P[k]);return `<tr data-p="${k}" class="${FP===k?"on":""}"><td><b>${k}</b></td><td>${t.n}</td><td>${t.pl}</td><td class="ok">${t.w}</td><td class="gold">${t.wr}</td></tr>`}).join(""):`<tr><td class="empty">Nessun ciclo con 1ª, 2ª e 3ª inserite.</td></tr>`;
+ const res=FP?base.filter(x=>matchPat(x,FP,ex)):base,t=tot(res);
+ const st=(v,lab,cls="")=>`<div class="stat"><b class="${cls}">${v}</b><span>${lab}</span></div>`;
+ $("ftot").innerHTML=st(t.n,"cicli")+st(t.pl,"giocati")+st(t.w,"presi","ok")+st(t.l,"persi","ko")+st(t.wr,"resa","gold")+st(t.ns,"non si gioca")+st(t.dg,"da giocare");
+ $("fn").textContent=res.length;
+ $("flist").innerHTML=res.length?LEGEND+res.slice().reverse().map(x=>`<div class="mut" style="font-size:12px;margin-top:10px">Uguali alla 1ª → 2ª: <b>${x.a}</b> · 3ª: <b>${x.b}</b> · Ultima: <b>${x.u===null?"—":x.u}</b></div>`+cycleCard(x.c,x.E,false,x.d)).join(""):`<div class="empty">Nessun ciclo corrisponde ai filtri.</div>`}
+$("fchips").addEventListener("click",e=>{const t=e.target.closest("[data-p]");if(t){FP=t.dataset.p||null;renderFilt()}});
+$("fpat").addEventListener("click",e=>{const t=e.target.closest("tr[data-p]");if(t){FP=FP===t.dataset.p?null:t.dataset.p;renderFilt()}});
+["fexact","fa","fb","fu","fc","fr","fo","fd1","fd2"].forEach(id=>$(id).addEventListener("change",()=>{if(id==="fexact")FP=null;renderFilt()}));
+$("freset").onclick=()=>{FP=null;["fa","fb","fu","fc","fr","fo","fd1","fd2"].forEach(id=>$(id).value="");$("fexact").checked=false;renderFilt()};
 $("exp").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(DB,null,1)],{type:"application/json"}));a.download="cavalli-backup-"+today()+".json";a.click()};
 $("impb").onclick=()=>$("impf").click();
 $("impf").onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const d=JSON.parse(t);if(!d||typeof d.days!=="object")throw 0;const n=Object.keys(d.days).length;
