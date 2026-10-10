@@ -136,12 +136,12 @@ details summary{cursor:pointer;color:#c9b8ff;font-weight:600}details li{margin:4
   <div class="row" id="fchips"></div>
   <label class="row" style="margin-top:8px;font-size:14px"><input type="checkbox" id="fexact" style="width:auto"> ordine esatto (2ª-3ª)</label></div>
  <div class="card"><h2>Filtri</h2><div class="fgrid">
-  <label>2ª uguali<select id="fa"></select></label><label>3ª uguali<select id="fb"></select></label><label>Ultima uguali<select id="fu"></select></label>
+  <label>2ª uguali<select id="fa"></select></label><label>3ª uguali<select id="fb"></select></label><label id="fulab">Ultima uguali<select id="fu"></select></label>
   <label>Ciclo<select id="fc"><option value="">tutti</option><option>1</option><option>2</option><option>3</option></select></label>
   <label>Regola<select id="fr"></select></label>
   <label>Esito<select id="fo"><option value="">tutti</option><option>PRESO</option><option>PERSO</option><option>non si gioca</option><option>da giocare</option></select></label>
   <label>Dal<input type="date" id="fd1"></label><label>Al<input type="date" id="fd2"></label></div>
-  <div class="row" style="margin-top:8px"><button class="sm" id="freset">↺ Azzera filtri</button></div></div>
+  <div class="row" style="margin-top:8px;justify-content:space-between"><label class="row" style="font-size:14px"><input type="checkbox" id="showu" style="width:auto"> Mostra ultima del ciclo</label><button class="sm" id="freset">↺ Azzera filtri</button></div></div>
  <div class="card"><h2>Tutti gli schemi</h2><div style="overflow:auto"><table id="fpat"></table></div><div class="mut" style="font-size:12px;margin-top:6px">Tocca una riga per filtrare. Conteggi su tutte le giornate salvate (cicli con 1ª, 2ª e 3ª inserite).</div></div>
  <div class="selbar" id="selbar"><b id="seln">0 selezionati</b><div class="row"><button class="sm" id="selonly">👁 Mostra solo selezionati</button><button class="sm" id="selall">Seleziona tutti (filtrati)</button><button class="sm ghost" id="selnone">Deseleziona tutti</button></div></div>
  <div class="card"><h2 id="ftoth">Totali del filtro</h2><div class="stats" id="ftot"></div></div>
@@ -152,6 +152,7 @@ details summary{cursor:pointer;color:#c9b8ff;font-weight:600}details li{margin:4
 <script>
 "use strict";
 const MAX=99, SUB=11, PER=3, L=SUB*PER, KEY="gbcavalli_v1";
+let SHOWU=localStorage.getItem("gbcavalli_showu")!=="0";
 const KEYS=[1,12,23,33,34,45,56,66,67,78,89,99];
 const $=id=>document.getElementById(id);
 // ---- orari (dalle ancore certe del file originale, entro la 99) ----
@@ -196,11 +197,11 @@ const trioAt=(E,n)=>complete(E[n])?trioOf(E[n]):[];
 const REFK=[0,SUB,2*SUB,L-1],REFN=["1ª","2ª","3ª","Ultima"];
 function yOf(E,r){const a=anchorOf(r),k=r-a,Y=trioAt(E,a);
  if(k===SUB||k===2*SUB||k===L-1)return Y;
- if(k===0)return Y.filter(n=>REFK.slice(1).some(o=>trioAt(E,a+o).includes(n)));
+ if(k===0)return Y.filter(n=>REFK.slice(1,SHOWU?4:3).some(o=>trioAt(E,a+o).includes(n)));
  return []}
 function sameLine(E,a){const Y=trioAt(E,a);if(!Y.length)return `<div class="same mut">Uguali alla 1ª: inserisci la corsa #${a}</div>`;
  const f=(n,lab)=>{if(!complete(E[n]))return lab+' → <span class="mut">—</span>';const m=trioAt(E,n).filter(x=>Y.includes(x));return lab+" → "+(m.length?m.map(x=>`<span class="ball y s">${x}</span>`).join(""):'<span class="mut">nessuno</span>')};
- return `<div class="same">Uguali alla 1ª: ${f(a+SUB,"2ª")} · ${f(a+2*SUB,"3ª")} · ${f(a+L-1,"Ultima")}</div>`}
+ return `<div class="same">Uguali alla 1ª: ${f(a+SUB,"2ª")} · ${f(a+2*SUB,"3ª")}${SHOWU?` · ${f(a+L-1,"Ultima")}`:""}</div>`}
 function keyLabel(r){const k=REFK.indexOf((r-1)%L);if(k<0)return"";return `<span class="key ${k?"":"k1"}">${k===3?"Ultima del ciclo":REFN[k]+" del ciclo"}</span>`}
 const LEGEND=`<div class="legend"><span><span class="ball y s">7</span> uguale alla 1ª del ciclo (nella 1ª: numeri ripetuti)</span><span><span class="ball hit s">7</span> giocato e uscito</span><span><span class="ball hit y s">7</span> entrambi</span></div>`;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -209,7 +210,7 @@ function cycleCard(c,E,edit,dd){const r=c.r,a=c.start,tom=c.target>MAX;let state
  else if(!r.plays.length)state=`<span class="pill wait">NON SI GIOCA</span>`;
  else if(c.hit===null)state=`<span class="pill" style="color:var(--gold)">DA GIOCARE</span>`;
  else state=c.hit?`<span class="pill ok">PRESO${c.pos?" · "+c.pos+"°":""}</span>`:`<span class="pill ko">PERSO</span>`;
- const refs=REFK.map((o,i)=>{const n=a+o,e=E[n];return `<${edit?"button":"div"} class="ref ${i?"":"r1"} ${edit&&n===RACE?"cur":""}" ${edit?`data-go="${n}"`:""}><span class="rl">${REFN[i]}</span><span class="rr">#${n} · ${fmtT(n)}</span><span class="rb">${complete(e)?balls(trioOf(e),[],false,yOf(E,n),true):'<span class="mut">—</span>'}</span></${edit?"button":"div"}>`}).join("");
+ const refs=REFK.slice(0,SHOWU?4:3).map((o,i)=>{const n=a+o,e=E[n];return `<${edit?"button":"div"} class="ref ${i?"":"r1"} ${edit&&n===RACE?"cur":""}" ${edit?`data-go="${n}"`:""}><span class="rl">${REFN[i]}</span><span class="rr">#${n} · ${fmtT(n)}</span><span class="rb">${complete(e)?balls(trioOf(e),[],false,yOf(E,n),true):'<span class="mut">—</span>'}</span></${edit?"button":"div"}>`}).join("");
  const pe=E[c.target],playLbl=tom?`#1 di domani <span class="mut">(${fmtDay(nextDay(dd||(edit?DAY:STDAY)))})</span>`:`#${c.target} <span class="mut">${fmtT(c.target)}</span>`;
  let res;
  if(!r)res=`<div class="mut">Servono le corse ${c.missing.map(n=>"#"+n).join(", ")} per calcolare la giocata.</div>`;
@@ -217,7 +218,7 @@ function cycleCard(c,E,edit,dd){const r=c.r,a=c.start,tom=c.target>MAX;let state
   <div style="text-align:right"><div class="rl">Corsa di gioco</div><div class="pr">${playLbl}</div><div>${complete(pe)?balls(trioOf(pe),r.plays,false,[],true):'<span class="mut">arrivo non inserito</span>'}</div></div></div>
   <div class="why"><b class="gold">${r.rule}</b> · ${esc(r.why)} <span class="mut">(Y∩2ª=${r.m2}, Y∩3ª=${r.m3})</span>${r.ambiguous?`<br><span class="mut">R8 in prova · A: ${r.playsA.join(",")}${c.hA!==null?(c.hA?" ✓":" ✗"):""} · B: ${r.playsB.join(",")}${c.hB!==null?(c.hB?" ✓":" ✗"):""}</span>`:""}</div>`;
  return `<div class="cblock"><div class="ch"><div>${dd?`<span class="key k1">${fmtDay(dd)}</span> `:""}<b>Ciclo ${c.i+1}</b> <span class="mut">corse ${a}→${a+L-1}</span></div>${state}</div>
- <div class="refs">${refs}</div>${sameLine(E,a)}
+ <div class="refs" style="grid-template-columns:repeat(${SHOWU?4:3},1fr)">${refs}</div>${sameLine(E,a)}
  <div class="res"><div class="rt">🎯 Risultato</div>${res}<div class="rstate">${state}</div></div></div>`}
 // ---- schermata inserimento ----
 const ins=[$("n1"),$("n2"),$("n3")];
@@ -285,10 +286,10 @@ function fcard(x){const c=x.c,E=x.E,r=c.r,a=c.start,tom=c.target>MAX,pe=E[c.targ
  const box=(lab,n,inner,cls="")=>`<div class="${cls}"><div class="rl">${lab}</div><div class="rr">${n}</div><div class="bs">${inner}</div></div>`;
  const tr=n=>complete(E[n])?balls(trioOf(E[n]),[],false,yOf(E,n)):'<span class="mut">—</span>';
  const st=x.o==="PRESO"?`<span class="pill ok">PRESO${c.pos?" · "+c.pos+"°":""}</span>`:x.o==="PERSO"?`<span class="pill ko">PERSO</span>`:`<span class="pill wait">${x.o.toUpperCase()}</span>`;
- const sk=x.d+"|"+c.i;return `<div class="fc ${SEL.has(sk)?"sel":""}" data-sk="${sk}"><div class="fh"><div><span class="ck">${SEL.has(sk)?"✓":""}</span><span class="key k1">${fmtDay(x.d)}</span> <b>Ciclo ${c.i+1}</b> <span class="mut" style="font-size:12px">${x.a}-${x.b}${x.u===null?"":" · ult "+x.u}</span></div>${st}</div>
- <div class="fr5">${box("1ª","#"+a,tr(a))}${box("2ª","#"+(a+SUB),tr(a+SUB))}${box("3ª","#"+(a+2*SUB),tr(a+2*SUB))}${box("Ultima","#"+(a+L-1),tr(a+L-1))}${box("Risultato",tom?"#1 dom.":"#"+c.target,complete(pe)?balls(trioOf(pe),r&&r.plays.length?r.plays:[],false):'<span class="mut">—</span>',"g")}</div>
+ const sk=x.d+"|"+c.i;return `<div class="fc ${SEL.has(sk)?"sel":""}" data-sk="${sk}"><div class="fh"><div><span class="ck">${SEL.has(sk)?"✓":""}</span><span class="key k1">${fmtDay(x.d)}</span> <b>Ciclo ${c.i+1}</b> <span class="mut" style="font-size:12px">${x.a}-${x.b}${!SHOWU||x.u===null?"":" · ult "+x.u}</span></div>${st}</div>
+ <div class="fr5" style="grid-template-columns:repeat(${SHOWU?5:4},minmax(0,1fr))">${box("1ª","#"+a,tr(a))}${box("2ª","#"+(a+SUB),tr(a+SUB))}${box("3ª","#"+(a+2*SUB),tr(a+2*SUB))}${SHOWU?box("Ultima","#"+(a+L-1),tr(a+L-1)):""}${box("Risultato",tom?"#1 dom.":"#"+c.target,complete(pe)?balls(trioOf(pe),r&&r.plays.length?r.plays:[],false):'<span class="mut">—</span>',"g")}</div>
  <div class="fpl"><span>Giocati: ${r&&r.plays.length?`<b class="gold">${r.plays.join(", ")}</b>`:'<span class="mut">nessuno</span>'}</span><span class="mut">${r?r.rule:""}</span></div></div>`}
-function renderFilt(){fillSel();const ex=$("fexact").checked,all=allCycles(),g=id=>$(id).value;
+function renderFilt(){fillSel();$("showu").checked=SHOWU;$("fulab").classList.toggle("hide",!SHOWU);const ex=$("fexact").checked,all=allCycles(),g=id=>$(id).value;
  const AP=activePat();
  $("fchips").innerHTML=`<button class="chip ${AP?"":"on"}" data-p="">tutti</button>`+PATS.map(p=>`<button class="chip ${AP===p?"on":""}" data-p="${p}">${p}</button>`).join("");
  // base: tutti i filtri tranne lo schema (2ª/3ª)
@@ -310,6 +311,7 @@ $("fchips").addEventListener("click",e=>{const t=e.target.closest("[data-p]");if
 $("fpat").addEventListener("click",e=>{const t=e.target.closest("tr[data-p]");if(t){setPat(activePat()===t.dataset.p?null:t.dataset.p,true);renderFilt()}});
 ["fexact","fa","fb","fu","fc","fr","fo","fd1","fd2"].forEach(id=>$(id).addEventListener("change",()=>{if(id==="fexact"){$("fa").value="";$("fb").value=""}FP=null;renderFilt()}));
 $("freset").onclick=()=>{FP=null;["fa","fb","fu","fc","fr","fo","fd1","fd2"].forEach(id=>$(id).value="");$("fexact").checked=false;renderFilt()};
+$("showu").addEventListener("change",e=>{SHOWU=e.target.checked;localStorage.setItem("gbcavalli_showu",SHOWU?"1":"0");if(!SHOWU)$("fu").value="";renderFilt();renderMain()});
 $("exp").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(DB,null,1)],{type:"application/json"}));a.download="cavalli-backup-"+today()+".json";a.click()};
 $("impb").onclick=()=>$("impf").click();
 $("impf").onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const d=JSON.parse(t);if(!d||typeof d.days!=="object")throw 0;const n=Object.keys(d.days).length;
