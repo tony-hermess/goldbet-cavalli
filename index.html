@@ -42,7 +42,17 @@ button.sm{padding:6px 10px;font-size:13px}button:active{transform:scale(.97)}
 .key.k1{background:#00c2ff22;color:#8fe9ff;border-color:#00c2ff88}
 .item.kr,tr.kr td{background:#ffd1660d}
 .same{margin-top:8px;padding:6px 8px;border-radius:8px;background:#00c2ff14;border:1px solid #00c2ff55;font-size:13px;font-weight:600;color:#8fe9ff;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
-.chips{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;margin:0 0 12px}.chip{padding:6px 0;font-size:12px;border-radius:8px}.chip.f{background:#34d97f22;border-color:#34d97f88;color:#9ff0c2}.chip.on{outline:2px solid var(--acc2)}
+.chips{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin:0 0 12px}.chip{padding:6px 0;font-size:12px;border-radius:8px}.chip.f{background:#34d97f22;border-color:#34d97f88;color:#9ff0c2}.chip.on{outline:2px solid var(--acc2)}
+.cblock{border:1px solid #4a3d85;border-radius:16px;padding:12px;margin:14px 0;background:linear-gradient(180deg,#221a4a,#140f2c);box-shadow:0 6px 20px #0005}
+.cblock .ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:17px}
+.refs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.ref{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 2px;border-radius:10px;background:#0d0a1c99;border:1px solid var(--line);text-align:center;font-weight:400}
+.ref.r1{border-color:#00c2ff88}.ref.cur{outline:2px solid var(--acc2)}
+.rl{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#c9b8ff;font-weight:700}.rr{font-size:10px;color:var(--mut)}.rb{display:flex;min-height:22px}
+.res{margin-top:10px;padding:12px;border-radius:12px;background:linear-gradient(135deg,#2b1b6b,#3a1250);border:1px solid #6b52e0}
+.res .rt{font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+.resrow{display:flex;justify-content:space-between;gap:8px}.playballs .ball{width:38px;height:38px;font-size:17px}.pr{font-size:20px;font-weight:800}
+.rstate{margin-top:8px;text-align:center}.rstate .pill{font-size:14px;padding:5px 14px}
 .legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--mut);align-items:center;margin-bottom:8px}.legend span{display:inline-flex;align-items:center;gap:4px}
 .list{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow:auto}
 .item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:#0d0a1c88;border:1px solid var(--line);border-radius:12px}
@@ -84,10 +94,9 @@ details summary{cursor:pointer;color:#c9b8ff;font-weight:600}details li{margin:4
   <div class="row" style="justify-content:center"><button class="pri" id="save" style="flex:1;max-width:320px">Salva e vai alla prossima ⏎</button><button id="del" class="ghost hide">🗑 Elimina</button></div>
  </div>
  <div class="card next" id="nextbox"></div>
- <div class="card"><h2>Cicli della giornata</h2><div id="cycles"></div></div>
- <div class="card"><h2>Corse inserite · <span id="cnt">0</span>/9</h2><div class="list" id="entered"></div></div>
+ <div class="card"><h2>Cicli della giornata · <span id="cnt">0</span>/12 corse</h2><div id="cycles"></div></div>
  <div class="card"><details><summary>📖 Regole del sistema Trio (cavalli)</summary>
-  <p class="mut" style="font-size:14px">Ciclo di <b>33 corse</b> (3 sottocicli da 11). <b>Y</b> = trio della 1ª corsa del ciclo · <b>2° D</b> = trio della 1ª corsa del 2° sottociclo · <b>3° D</b> = trio della 1ª corsa del 3° sottociclo. Si gioca alla <b>corsa di fine ciclo</b> (inizio + 33): preso se un numero giocato arriva nei primi 3. Si inseriscono solo le corse chiave 1, 12, 23, 34, 45, 56, 67, 78, 89. Cicli: 1→34, 34→67, 67→1 del giorno dopo (la corsa 100 è la corsa 1 del giorno successivo).</p>
+  <p class="mut" style="font-size:14px">Ciclo di <b>33 corse</b> (3 sottocicli da 11). <b>Y</b> = trio della 1ª corsa del ciclo · <b>2° D</b> = trio della 1ª corsa del 2° sottociclo · <b>3° D</b> = trio della 1ª corsa del 3° sottociclo. Si gioca alla <b>corsa di fine ciclo</b> (inizio + 33): preso se un numero giocato arriva nei primi 3. Si inseriscono le corse 1, 12, 23, 33, 34, 45, 56, 66, 67, 78, 89, 99 (33/66/99 = ultima del ciclo, solo informativa). Cicli: 1→34, 34→67, 67→1 del giorno dopo (la corsa 100 è la corsa 1 del giorno successivo).</p>
   <p style="font-size:14px"><b>Regola base</b> (Y contro un riferimento): 3 in comune → nullo · 2 → il numero nuovo del riferimento · 1 → quel numero · 0 → nullo.</p>
   <ul>
   <li><b>R4</b> entrambi i D nulli → non si gioca; un D nullo per 3 uguali → regola base sull'altro.</li>
@@ -108,9 +117,8 @@ details summary{cursor:pointer;color:#c9b8ff;font-weight:600}details li{margin:4
   <span id="mvbox" class="row hide"><input type="date" id="mvdate" aria-label="Nuova data"><button class="pri sm" id="mvgo">Sposta</button><button class="ghost sm" id="mvx">Annulla</button></span></div>
   <div class="mut" style="font-size:12px;margin-top:6px">Sposta tutte le corse della giornata selezionata su un'altra data.</div></div>
  <div class="card"><h2 id="sttitle">Riepilogo</h2><div class="stats" id="summary"></div></div>
- <div class="card"><h2>Esiti del finder</h2><div id="stcycles"></div></div>
+ <div class="card"><h2>Cicli</h2><div id="stcycles"></div></div>
  <div class="card"><h2>Numeri più frequenti</h2><div id="freq"></div></div>
- <div class="card"><h2>Tutte le corse in ordine</h2><div style="overflow:auto"><table id="sttable"></table></div></div>
  <div class="card"><h2>Backup</h2><div class="row">
   <button id="exp">⬇️ Esporta tutto (JSON)</button><button id="impb">⬆️ Importa JSON</button>
   <input type="file" id="impf" accept="application/json,.json" class="hide"><button id="delday" class="ghost ko">Elimina giornata</button></div>
@@ -121,7 +129,7 @@ details summary{cursor:pointer;color:#c9b8ff;font-weight:600}details li{margin:4
 <script>
 "use strict";
 const MAX=99, SUB=11, PER=3, L=SUB*PER, KEY="gbcavalli_v1";
-const KEYS=[1,12,23,34,45,56,67,78,89];
+const KEYS=[1,12,23,33,34,45,56,66,67,78,89,99];
 const $=id=>document.getElementById(id);
 // ---- orari (dalle ancore certe del file originale, entro la 99) ----
 const TIMES={1:"00:04",10:"00:58",28:"10:36",37:"11:30",55:"13:18",64:"14:08",82:"15:20",91:"15:56"};
@@ -162,31 +170,38 @@ function roles(){const ro={};makeCycles().forEach(c=>{const a=(n,t)=>(ro[n]=ro[n
 const balls=(arr,hits=[],cls=true,ys=[],sm=false)=>arr.map((n,i)=>`<span class="ball ${cls?"b"+(i+1):""} ${hits.includes(n)?"hit":""} ${ys.includes(n)?"y":""} ${sm?"s":""}">${n}</span>`).join("");
 const anchorOf=r=>Math.floor((r-1)/L)*L+1;
 const trioAt=(E,n)=>complete(E[n])?trioOf(E[n]):[];
+const REFK=[0,SUB,2*SUB,L-1],REFN=["1ª","2ª","3ª","Ultima"];
 function yOf(E,r){const a=anchorOf(r),k=r-a,Y=trioAt(E,a);
- if(k===SUB||k===2*SUB)return Y;
- if(k===0)return Y.filter(n=>trioAt(E,a+SUB).includes(n)||trioAt(E,a+2*SUB).includes(n));
+ if(k===SUB||k===2*SUB||k===L-1)return Y;
+ if(k===0)return Y.filter(n=>REFK.slice(1).some(o=>trioAt(E,a+o).includes(n)));
  return []}
-function sameLine(E,a){const Y=trioAt(E,a);if(!Y.length)return "";
- const f=(n,lab)=>{if(!complete(E[n]))return lab+' → <span class="mut">da inserire</span>';const m=trioAt(E,n).filter(x=>Y.includes(x));return lab+" → "+(m.length?m.map(x=>`<span class="ball y s">${x}</span>`).join(""):'<span class="mut">nessuno</span>')};
- return `<div class="same">Uguali alla 1ª: ${f(a+SUB,"2ª")} · ${f(a+2*SUB,"3ª")}</div>`}
-function keyLabel(r){if((r-1)%SUB)return"";const k=((r-1)%L)/SUB;return `<span class="key ${k?"":"k1"}">${k+1}ª del ciclo</span>`}
-const LEGEND=`<div class="legend"><span><span class="ball y s">7</span> nella 2ª/3ª del ciclo uguale alla 1ª (e nella 1ª: i numeri ripetuti)</span><span><span class="ball hit s">7</span> giocato e uscito</span><span><span class="ball hit y s">7</span> entrambi</span><span><span class="key k1">1ª del ciclo</span><span class="key">2ª/3ª</span> corse chiave</span></div>`;
+function sameLine(E,a){const Y=trioAt(E,a);if(!Y.length)return `<div class="same mut">Uguali alla 1ª: inserisci la corsa #${a}</div>`;
+ const f=(n,lab)=>{if(!complete(E[n]))return lab+' → <span class="mut">—</span>';const m=trioAt(E,n).filter(x=>Y.includes(x));return lab+" → "+(m.length?m.map(x=>`<span class="ball y s">${x}</span>`).join(""):'<span class="mut">nessuno</span>')};
+ return `<div class="same">Uguali alla 1ª: ${f(a+SUB,"2ª")} · ${f(a+2*SUB,"3ª")} · ${f(a+L-1,"Ultima")}</div>`}
+function keyLabel(r){const k=REFK.indexOf((r-1)%L);if(k<0)return"";return `<span class="key ${k?"":"k1"}">${k===3?"Ultima del ciclo":REFN[k]+" del ciclo"}</span>`}
+const LEGEND=`<div class="legend"><span><span class="ball y s">7</span> uguale alla 1ª del ciclo (nella 1ª: numeri ripetuti)</span><span><span class="ball hit s">7</span> giocato e uscito</span><span><span class="ball hit y s">7</span> entrambi</span></div>`;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-function cycleCard(c,E){const r=c.r;let state,body="";
- if(!r){state=`<span class="pill wait">mancano: ${c.missing.map(n=>"#"+n).join(", ")}</span>`}
- else if(!r.plays.length){state=`<span class="pill wait">non si gioca</span>`}
- else if(c.hit===null){state=`<span class="pill" style="color:var(--gold)">da giocare alla ${tgtLbl(c.target)}</span>`}
+function cycleCard(c,E,edit){const r=c.r,a=c.start,tom=c.target>MAX;let state;
+ if(!r)state=`<span class="pill wait">mancano: ${c.missing.map(n=>"#"+n).join(", ")}</span>`;
+ else if(!r.plays.length)state=`<span class="pill wait">NON SI GIOCA</span>`;
+ else if(c.hit===null)state=`<span class="pill" style="color:var(--gold)">DA GIOCARE</span>`;
  else state=c.hit?`<span class="pill ok">PRESO${c.pos?" · "+c.pos+"°":""}</span>`:`<span class="pill ko">PERSO</span>`;
- const Y=trioAt(E,c.start),cell=(lab,n,h=[])=>`<div>${lab} <span class="mut">${n>MAX?"#1":"#"+n}</span><b>${complete(E[n])?balls(trioOf(E[n]),h,false,yOf(E,n),true):"—"}</b></div>`;
- body=`<div class="steps">${cell("Y",c.start)}${cell("2° D",c.rifBase)}${cell("3° D",c.thirdBase)}${cell(c.target>MAX?"Gioco (domani)":"Gioco",c.target,r&&r.plays.length?r.plays:[])}</div>`;
- body+=sameLine(E,c.start);if(r)body+=`<div class="why"><b class="gold">${r.rule}</b> · ${esc(r.why)} (Y∩2°D=${r.m2}, Y∩3°D=${r.m3})${r.plays.length?` → gioca ${balls(r.plays,complete(E[c.target])?trioOf(E[c.target]):[],false)}`:""}${r.ambiguous?` <span class="mut">· A: ${r.playsA.join(",")}${c.hA!==null?(c.hA?" ✓":" ✗"):""} · B: ${r.playsB.join(",")}${c.hB!==null?(c.hB?" ✓":" ✗"):""}</span>`:""}</div>`;
- return `<div class="cyc"><div class="h"><b>Ciclo ${c.i+1} <span class="mut" style="font-weight:400">#${c.start}→${c.target>MAX?"#1 di domani":"#"+c.target}</span></b>${state}</div>${body}</div>`}
+ const refs=REFK.map((o,i)=>{const n=a+o,e=E[n];return `<${edit?"button":"div"} class="ref ${i?"":"r1"} ${edit&&n===RACE?"cur":""}" ${edit?`data-go="${n}"`:""}><span class="rl">${REFN[i]}</span><span class="rr">#${n} · ${fmtT(n)}</span><span class="rb">${complete(e)?balls(trioOf(e),[],true,yOf(E,n),true):'<span class="mut">—</span>'}</span></${edit?"button":"div"}>`}).join("");
+ const pe=E[c.target],playLbl=tom?`#1 di domani <span class="mut">(${fmtDay(nextDay(edit?DAY:STDAY))})</span>`:`#${c.target} <span class="mut">${fmtT(c.target)}</span>`;
+ let res;
+ if(!r)res=`<div class="mut">Servono le corse ${c.missing.map(n=>"#"+n).join(", ")} per calcolare la giocata.</div>`;
+ else res=`<div class="resrow"><div><div class="rl">Da giocare</div>${r.plays.length?`<div class="playballs">${balls(r.plays,complete(pe)?trioOf(pe):[],false)}</div>`:'<div class="mut">nessun numero</div>'}</div>
+  <div style="text-align:right"><div class="rl">Corsa di gioco</div><div class="pr">${playLbl}</div><div>${complete(pe)?balls(trioOf(pe),r.plays,true,[],true):'<span class="mut">arrivo non inserito</span>'}</div></div></div>
+  <div class="why"><b class="gold">${r.rule}</b> · ${esc(r.why)} <span class="mut">(Y∩2ª=${r.m2}, Y∩3ª=${r.m3})</span>${r.ambiguous?`<br><span class="mut">R8 in prova · A: ${r.playsA.join(",")}${c.hA!==null?(c.hA?" ✓":" ✗"):""} · B: ${r.playsB.join(",")}${c.hB!==null?(c.hB?" ✓":" ✗"):""}</span>`:""}</div>`;
+ return `<div class="cblock"><div class="ch"><div><b>Ciclo ${c.i+1}</b> <span class="mut">corse ${a}→${a+L-1}</span></div>${state}</div>
+ <div class="refs">${refs}</div>${sameLine(E,a)}
+ <div class="res"><div class="rt">🎯 Risultato</div>${res}<div class="rstate">${state}</div></div></div>`}
 // ---- schermata inserimento ----
 const ins=[$("n1"),$("n2"),$("n3")];
-function loadRace(){const E=entries(DAY),e=E[RACE];$("rn").textContent=RACE;$("rt").innerHTML=fmtT(RACE);
+function loadRace(){const E=entries(DAY),e=E[RACE];$("rn").textContent=RACE;$("rt").innerHTML=fmtT(RACE)+"<br>"+keyLabel(RACE);
  ins.forEach((x,i)=>x.value=e?e["n"+(i+1)]:"");$("del").classList.toggle("hide",!e);$("err").textContent="";$("save").firstChild.textContent=e?"Aggiorna e vai alla prossima ⏎":"Salva e vai alla prossima ⏎"}
 function firstEmpty(){const E=entries(DAY);return KEYS.find(k=>!E[k])||KEYS[KEYS.length-1]}
-function go(n){if(!KEYS.includes(n))return;RACE=n;loadRace();renderChips();ins[0].focus()}
+function go(n){if(!KEYS.includes(n))return;RACE=n;loadRace();renderMain();ins[0].focus()}
 const step=d=>{const i=KEYS.indexOf(RACE)+d;if(i>=0&&i<KEYS.length)go(KEYS[i])};
 function renderChips(){const E=entries(DAY);$("chips").innerHTML=KEYS.map(k=>`<button class="chip ${E[k]?"f":""} ${k===RACE?"on":""}" data-go="${k}">${k}${E[k]?" ✓":""}</button>`).join("")}
 function saveRace(){if(!KEYS.includes(RACE)){$("err").textContent="Si inseriscono solo le corse "+KEYS.join(", ");return}const v=ins.map(x=>x.value.trim());if(v.some(x=>!/^\d{1,2}$/.test(x)||+x<1)){$("err").textContent="Inserisci tre numeri validi (1–99)";return}
@@ -202,30 +217,27 @@ function renderMain(){const E=dayEx(DAY),cs=resolve(E),ro=roles();renderChips();
  else{const w=cs.find(c=>!c.r);if(w)h=`<h2>🎯 Prossima giocata</h2><div>In attesa dei dati del ciclo ${w.i+1}: servono le corse <b>${w.missing.map(n=>"#"+n).join(", ")}</b>.</div>`;
   else h=`<h2>🎯 Giornata completata</h2><div class="mut">Tutti i cicli della giornata sono stati valutati (il 3° con la corsa 1 del giorno dopo). Vedi le Statistiche.</div>`}
  $("nextbox").innerHTML=h;
- $("cycles").innerHTML=LEGEND+cs.map(c=>cycleCard(c,E)).join("")+`<div class="mut" style="font-size:12px;margin-top:8px">Il ciclo 3 (#67) si gioca sulla corsa 1 del giorno dopo (corsa 100).</div>`;
- const ks=Object.keys(E).map(Number).filter(k=>KEYS.includes(k)).sort((a,b)=>b-a);$("cnt").textContent=ks.length;
- $("entered").innerHTML=ks.length?LEGEND+ks.map(n=>`<div class="item ${keyLabel(n)?"kr":""}" data-r="${n}"><span class="rn">#${n}</span><span class="t">${fmtT(n)}</span><span class="sp">${balls(trioOf(E[n]),[],true,yOf(E,n))} ${keyLabel(n)}${ro[n]?` <span class="tag">${ro[n].join(" · ")}</span>`:""}</span><button class="sm" data-edit="${n}">✏️</button><button class="sm ghost" data-del="${n}">🗑</button></div>`).join(""):`<div class="empty">Nessuna corsa inserita per questa giornata.</div>`}
+ $("cycles").innerHTML=LEGEND+cs.map(c=>cycleCard(c,E,true)).join("")+`<div class="mut" style="font-size:12px">Tocca una corsa per inserirla o modificarla. Il ciclo 3 si gioca sulla corsa 1 del giorno dopo (corsa 100).</div>`;
+ $("cnt").textContent=Object.keys(entries(DAY)).filter(k=>KEYS.includes(+k)).length}
 // ---- statistiche ----
 function renderStats(){const ds=Object.keys(DB.days).sort().reverse();if(!STDAY||!DB.days[STDAY])STDAY=DB.days[DAY]?DAY:ds[0]||null;
- $("days").innerHTML=ds.length?ds.map(d=>`<button class="sm ${d===STDAY?"on":""}" data-day="${d}">${fmtDay(d)} · ${Object.keys(entries(d)).filter(k=>KEYS.includes(+k)).length}/9</button>`).join(""):`<div class="empty">Nessuna giornata salvata.</div>`;
+ $("days").innerHTML=ds.length?ds.map(d=>`<button class="sm ${d===STDAY?"on":""}" data-day="${d}">${fmtDay(d)} · ${Object.keys(entries(d)).filter(k=>KEYS.includes(+k)).length}/12</button>`).join(""):`<div class="empty">Nessuna giornata salvata.</div>`;
  const E=STDAY?dayEx(STDAY):{},cs=resolve(E),ro=roles();$("sttitle").textContent="Riepilogo"+(STDAY?" · "+fmtDay(STDAY):"");
  const played=cs.filter(c=>c.hit!==null),w=played.filter(c=>c.hit).length,l=played.length-w,skip=cs.filter(c=>c.r&&!c.r.plays.length).length,ks=Object.keys(E).map(Number).filter(k=>KEYS.includes(k)).sort((a,b)=>a-b);
  const st=(v,lab,cls="")=>`<div class="stat"><b class="${cls}">${v}</b><span>${lab}</span></div>`;
- $("summary").innerHTML=st(ks.length+"/9","corse")+st(played.length,"giocate")+st(w,"prese","ok")+st(l,"perse","ko")+st(played.length?Math.round(w/played.length*100)+"%":"—","resa","gold")+st(skip,"non giocati")+st(played.filter(c=>c.pos===1).length,"vinte al 1°");
- $("stcycles").innerHTML=LEGEND+cs.map(c=>cycleCard(c,E)).join("");
+ $("summary").innerHTML=st(ks.length+"/12","corse")+st(played.length,"giocate")+st(w,"prese","ok")+st(l,"perse","ko")+st(played.length?Math.round(w/played.length*100)+"%":"—","resa","gold")+st(skip,"non giocati")+st(played.filter(c=>c.pos===1).length,"vinte al 1°");
+ $("stcycles").innerHTML=LEGEND+cs.map(c=>cycleCard(c,E,false)).join("");
  const f={},f1={};ks.forEach(k=>{trioOf(E[k]).forEach((n,i)=>{f[n]=(f[n]||0)+1;if(!i)f1[n]=(f1[n]||0)+1})});
  const top=Object.keys(f).map(Number).sort((a,b)=>f[b]-f[a]||a-b).slice(0,10),mx=top.length?f[top[0]]:1;
  $("freq").innerHTML=top.length?`<table><tr><th>Numero</th><th>Nei primi 3</th><th>Vincente</th><th style="width:45%"></th></tr>${top.map(n=>`<tr><td><span class="ball">${n}</span></td><td>${f[n]}</td><td>${f1[n]||0}</td><td><div class="bar" style="width:${f[n]/mx*100}%"></div></td></tr>`).join("")}</table>`:`<div class="empty">Nessun dato.</div>`;
- const pl={};cs.forEach(c=>{if(c.r&&c.r.plays.length)pl[c.target]=c});
- $("sttable").innerHTML=ks.length?LEGEND+`<tr><th>Corsa</th><th>Ora</th><th>Arrivo</th><th>Ruolo</th><th>Esito</th></tr>`+ks.map(k=>{const c=pl[k];const hits=c?c.r.plays:[];
-  return `<tr class="${keyLabel(k)?"kr":""}"><td><b>#${k}</b></td><td>${fmtT(k)}</td><td>${balls(trioOf(E[k]),hits,true,yOf(E,k))}</td><td class="mut" style="font-size:12px">${keyLabel(k)}${ro[k]?"<br>"+ro[k].join("<br>"):""}</td><td>${c?(c.hit?`<span class="pill ok">PRESO</span>`:`<span class="pill ko">PERSO</span>`)+`<div class="mut" style="font-size:11px">${c.r.rule} · giocato ${c.r.plays.join(", ")}</div>`:""}</td></tr>`}).join(""):`<tr><td class="empty">Nessuna corsa.</td></tr>`}
+}
 const fmtDay=d=>{const[y,m,g]=d.split("-");return g+"/"+m+"/"+y};
 // ---- eventi ----
 $("day").value=DAY;$("day").addEventListener("change",e=>{if(!e.target.value)return;DAY=e.target.value;STDAY=DAY;RACE=firstEmpty();renderMain();loadRace();if(!$("v-stats").classList.contains("hide"))renderStats()});
 $("prev").onclick=()=>step(-1);$("nextr").onclick=()=>step(1);$("chips").addEventListener("click",e=>{const t=e.target.closest("[data-go]");if(t)go(+t.dataset.go)});$("save").onclick=saveRace;$("del").onclick=delRace;
 ins.forEach((x,i)=>{x.addEventListener("input",()=>{x.value=x.value.replace(/\D/g,"").slice(0,2);$("err").textContent="";if(x.value.length===2&&i<2)ins[i+1].focus()});
  x.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();if(i<2&&x.value)ins[i+1].focus();else saveRace()}else if(e.key===" "&&i<2){e.preventDefault();ins[i+1].focus()}else if(e.key==="Backspace"&&!x.value&&i>0){ins[i-1].focus()}})});
-$("entered").addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;if(t.dataset.edit)go(+t.dataset.edit);else if(t.dataset.del){RACE=+t.dataset.del;delRace()}});
+$("cycles").addEventListener("click",e=>{const t=e.target.closest("[data-go]");if(t){go(+t.dataset.go);scrollTo({top:0,behavior:"smooth"})}});
 $("days").addEventListener("click",e=>{const t=e.target.closest("button[data-day]");if(t){STDAY=t.dataset.day;renderStats()}});
 function tab(s){$("v-main").classList.toggle("hide",s);$("v-stats").classList.toggle("hide",!s);$("t-main").classList.toggle("on",!s);$("t-stats").classList.toggle("on",s);if(s)renderStats();window.scrollTo(0,0)}
 $("t-main").onclick=()=>tab(false);$("t-stats").onclick=()=>tab(true);
