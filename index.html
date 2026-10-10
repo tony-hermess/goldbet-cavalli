@@ -56,6 +56,8 @@ button.sm{padding:6px 10px;font-size:13px}button:active{transform:scale(.97)}
 .fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.fgrid label{font-size:12px;color:var(--mut);display:flex;flex-direction:column;gap:3px}.fgrid select,.fgrid input{width:100%;min-width:0;max-width:100%;-webkit-appearance:none;appearance:none;font-size:14px}.fgrid label{min-width:0}
 .fc{border:1px solid #4a3d85;border-radius:14px;padding:10px;margin:10px 0;background:linear-gradient(180deg,#221a4a,#140f2c)}.fc .fh{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:8px;font-size:14px}
 .fr5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.fr5>div{background:#0d0a1c99;border:1px solid var(--line);border-radius:8px;padding:5px 2px;text-align:center}.fr5 .g{border-color:#ffd16688;background:#ffd16610}.fr5 .rl{font-size:9px}.fr5 .rr{font-size:9px}.fr5 .ball{width:19px;height:19px;font-size:10px;margin:1px}.fr5 .bs{display:flex;flex-wrap:wrap;justify-content:center}
+.selbar{position:sticky;top:0;z-index:4;margin:12px 0;padding:10px;border-radius:14px;background:#1a1236f2;backdrop-filter:blur(8px);border:1px solid #6b52e0;display:flex;flex-direction:column;gap:6px}.selbar .row{gap:4px}
+.fc{cursor:pointer;position:relative}.fc.sel{border:2px solid var(--gold);box-shadow:0 0 14px #ffd16655}.fc .ck{width:22px;height:22px;border-radius:6px;border:2px solid var(--mut);display:inline-flex;align-items:center;justify-content:center;font-size:14px;margin-right:4px;vertical-align:middle}.fc.sel .ck{background:var(--gold);border-color:var(--gold);color:#1a1236}
 .fpl{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:13px;gap:6px;flex-wrap:wrap}
 #fchips .chip{padding:8px 12px;font-size:14px}#fchips .chip.on{background:var(--acc);border-color:var(--acc)}#fpat tr{cursor:pointer}#fpat tr.on td{background:#7c5cff33}
 .legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--mut);align-items:center;margin-bottom:8px}.legend span{display:inline-flex;align-items:center;gap:4px}
@@ -141,7 +143,8 @@ details summary{cursor:pointer;color:#c9b8ff;font-weight:600}details li{margin:4
   <label>Dal<input type="date" id="fd1"></label><label>Al<input type="date" id="fd2"></label></div>
   <div class="row" style="margin-top:8px"><button class="sm" id="freset">↺ Azzera filtri</button></div></div>
  <div class="card"><h2>Tutti gli schemi</h2><div style="overflow:auto"><table id="fpat"></table></div><div class="mut" style="font-size:12px;margin-top:6px">Tocca una riga per filtrare. Conteggi su tutte le giornate salvate (cicli con 1ª, 2ª e 3ª inserite).</div></div>
- <div class="card"><h2>Totali del filtro</h2><div class="stats" id="ftot"></div></div>
+ <div class="selbar" id="selbar"><b id="seln">0 selezionati</b><div class="row"><button class="sm" id="selonly">👁 Mostra solo selezionati</button><button class="sm" id="selall">Seleziona tutti (filtrati)</button><button class="sm ghost" id="selnone">Deseleziona tutti</button></div></div>
+ <div class="card"><h2 id="ftoth">Totali del filtro</h2><div class="stats" id="ftot"></div></div>
  <div class="card"><h2>Cicli trovati · <span id="fn">0</span></h2><div id="flist"></div></div>
 </section>
 </main>
@@ -262,7 +265,9 @@ $("days").addEventListener("click",e=>{const t=e.target.closest("button[data-day
 function tab(v){["main","stats","filt"].forEach(k=>{$("v-"+k).classList.toggle("hide",k!==v);$("t-"+k).classList.toggle("on",k===v)});if(v==="stats")renderStats();if(v==="filt")renderFilt();window.scrollTo(0,0)}
 $("t-main").onclick=()=>tab("main");$("t-stats").onclick=()=>tab("stats");$("t-filt").onclick=()=>tab("filt");
 // ---- filtri ----
-let FP=null;const PATS=["1-0","1-1","2-0","2-1","2-2","0-0","3-x"];
+let FP=null,ONLY=false;let SEL=new Set();try{SEL=new Set(JSON.parse(localStorage.getItem("gbcavalli_sel")||"[]"))}catch(e){}
+const saveSel=()=>localStorage.setItem("gbcavalli_sel",JSON.stringify([...SEL]));let LASTRES=[];
+const PATS=["1-0","1-1","2-0","2-1","2-2","0-0","3-x"];
 const cnt1=(E,a,n)=>complete(E[n])?trioAt(E,n).filter(x=>trioAt(E,a).includes(x)).length:null;
 const outc=c=>c.hit===true?"PRESO":c.hit===false?"PERSO":c.r&&!c.r.plays.length?"non si gioca":"da giocare";
 function allCycles(){const out=[];Object.keys(DB.days).sort().forEach(d=>{const E=dayEx(d);resolve(E).forEach(c=>{const a=c.start;if(!complete(E[a])||!complete(E[a+SUB])||!complete(E[a+2*SUB]))return;
@@ -280,7 +285,7 @@ function fcard(x){const c=x.c,E=x.E,r=c.r,a=c.start,tom=c.target>MAX,pe=E[c.targ
  const box=(lab,n,inner,cls="")=>`<div class="${cls}"><div class="rl">${lab}</div><div class="rr">${n}</div><div class="bs">${inner}</div></div>`;
  const tr=n=>complete(E[n])?balls(trioOf(E[n]),[],false,yOf(E,n)):'<span class="mut">—</span>';
  const st=x.o==="PRESO"?`<span class="pill ok">PRESO${c.pos?" · "+c.pos+"°":""}</span>`:x.o==="PERSO"?`<span class="pill ko">PERSO</span>`:`<span class="pill wait">${x.o.toUpperCase()}</span>`;
- return `<div class="fc"><div class="fh"><div><span class="key k1">${fmtDay(x.d)}</span> <b>Ciclo ${c.i+1}</b> <span class="mut" style="font-size:12px">${x.a}-${x.b}${x.u===null?"":" · ult "+x.u}</span></div>${st}</div>
+ const sk=x.d+"|"+c.i;return `<div class="fc ${SEL.has(sk)?"sel":""}" data-sk="${sk}"><div class="fh"><div><span class="ck">${SEL.has(sk)?"✓":""}</span><span class="key k1">${fmtDay(x.d)}</span> <b>Ciclo ${c.i+1}</b> <span class="mut" style="font-size:12px">${x.a}-${x.b}${x.u===null?"":" · ult "+x.u}</span></div>${st}</div>
  <div class="fr5">${box("1ª","#"+a,tr(a))}${box("2ª","#"+(a+SUB),tr(a+SUB))}${box("3ª","#"+(a+2*SUB),tr(a+2*SUB))}${box("Ultima","#"+(a+L-1),tr(a+L-1))}${box("Risultato",tom?"#1 dom.":"#"+c.target,complete(pe)?balls(trioOf(pe),r&&r.plays.length?r.plays:[],false):'<span class="mut">—</span>',"g")}</div>
  <div class="fpl"><span>Giocati: ${r&&r.plays.length?`<b class="gold">${r.plays.join(", ")}</b>`:'<span class="mut">nessuno</span>'}</span><span class="mut">${r?r.rule:""}</span></div></div>`}
 function renderFilt(){fillSel();const ex=$("fexact").checked,all=allCycles(),g=id=>$(id).value;
@@ -293,11 +298,14 @@ function renderFilt(){fillSel();const ex=$("fexact").checked,all=allCycles(),g=i
  const tot=xs=>{const pl=xs.filter(x=>x.c.hit!==null),w=pl.filter(x=>x.c.hit).length;return{n:xs.length,pl:pl.length,w,l:pl.length-w,ns:xs.filter(x=>x.o==="non si gioca").length,dg:xs.filter(x=>x.o==="da giocare").length,wr:pl.length?Math.round(w/pl.length*100)+"%":"—"}};
  const keys=Object.keys(P).sort((a,b)=>P[b].length-P[a].length||a.localeCompare(b));
  $("fpat").innerHTML=keys.length?`<tr><th>Schema ${ex?"(2ª-3ª)":""}</th><th>Cicli</th><th>Giocati</th><th>Presi</th><th>Resa</th></tr>`+keys.map(k=>{const t=tot(P[k]);return `<tr data-p="${k}" class="${AP===k?"on":""}"><td><b>${k}</b></td><td>${t.n}</td><td>${t.pl}</td><td class="ok">${t.w}</td><td class="gold">${t.wr}</td></tr>`}).join(""):`<tr><td class="empty">Nessun ciclo con 1ª, 2ª e 3ª inserite.</td></tr>`;
- const res=base.filter(sel),t=tot(res);
+ const filt=base.filter(sel);LASTRES=filt;const res=ONLY?all.filter(x=>SEL.has(x.d+"|"+x.c.i)):filt,t=tot(res);
+ $("seln").textContent=SEL.size+" selezionati";$("selonly").textContent=ONLY?"↩︎ Mostra tutti":"👁 Mostra solo selezionati";$("ftoth").textContent=ONLY?"Totali dei selezionati":"Totali del filtro";
  const st=(v,lab,cls="")=>`<div class="stat"><b class="${cls}">${v}</b><span>${lab}</span></div>`;
  $("ftot").innerHTML=st(t.n,"cicli")+st(t.pl,"giocati")+st(t.w,"presi","ok")+st(t.l,"persi","ko")+st(t.wr,"resa","gold")+st(t.ns,"non si gioca")+st(t.dg,"da giocare");
- $("fn").textContent=res.length+(AP?" · schema "+AP+(ex?" (ordine esatto)":""):"");
- $("flist").innerHTML=res.length?LEGEND+res.slice().reverse().map(fcard).join(""):`<div class="empty">Nessun ciclo corrisponde ai filtri.</div>`}
+ $("fn").textContent=res.length+(ONLY?" · solo selezionati":AP?" · schema "+AP+(ex?" (ordine esatto)":""):"");
+ $("flist").innerHTML=res.length?LEGEND+res.slice().reverse().map(fcard).join(""):(ONLY?`<div class="empty">Nessun ciclo selezionato.</div>`:`<div class="empty">Nessun ciclo corrisponde ai filtri.</div>`)}
+$("flist").addEventListener("click",e=>{const t=e.target.closest(".fc[data-sk]");if(!t)return;const k=t.dataset.sk;SEL.has(k)?SEL.delete(k):SEL.add(k);saveSel();renderFilt()});
+$("selonly").onclick=()=>{ONLY=!ONLY;renderFilt()};$("selall").onclick=()=>{LASTRES.forEach(x=>SEL.add(x.d+"|"+x.c.i));saveSel();renderFilt()};$("selnone").onclick=()=>{SEL.clear();saveSel();renderFilt()};
 $("fchips").addEventListener("click",e=>{const t=e.target.closest("[data-p]");if(t){setPat(t.dataset.p||null,false);renderFilt()}});
 $("fpat").addEventListener("click",e=>{const t=e.target.closest("tr[data-p]");if(t){setPat(activePat()===t.dataset.p?null:t.dataset.p,true);renderFilt()}});
 ["fexact","fa","fb","fu","fc","fr","fo","fd1","fd2"].forEach(id=>$(id).addEventListener("change",()=>{if(id==="fexact"){$("fa").value="";$("fb").value=""}FP=null;renderFilt()}));
