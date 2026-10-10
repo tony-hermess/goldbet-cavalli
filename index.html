@@ -32,7 +32,7 @@ button.sm{padding:6px 10px;font-size:13px}button:active{transform:scale(.97)}
 .mut{color:var(--mut)}.ok{color:var(--ok)}.ko{color:var(--ko)}.gold{color:var(--gold)}
 .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;background:#ffffff14;border:1px solid var(--line)}
 .pill.ok{background:#34d97f22;border-color:#34d97f66}.pill.ko{background:#ff6b5e22;border-color:#ff6b5e66}.pill.wait{color:var(--mut)}
-.ball{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-weight:800;font-size:13px;margin-right:3px;background:#2a2150;border:1px solid #4a3d85}
+.ball{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-weight:800;font-size:13px;margin-right:3px;background:transparent;border:1px solid #ffffff26;color:#d8d3f0}
 .ball.b1{background:#c9a22733;border-color:#c9a227}.ball.b2{background:#9aa3b533;border-color:#9aa3b5}.ball.b3{background:#b0703a33;border-color:#b0703a}
 .ball.y{background:#00c2ff2e;border-color:#00c2ff;color:#8fe9ff;box-shadow:0 0 8px #00c2ff88}
 .ball.hit{background:var(--ok);color:#06210f;border-color:var(--ok)}
@@ -53,7 +53,10 @@ button.sm{padding:6px 10px;font-size:13px}button:active{transform:scale(.97)}
 .res .rt{font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
 .resrow{display:flex;justify-content:space-between;gap:8px}.playballs .ball{width:38px;height:38px;font-size:17px}.pr{font-size:20px;font-weight:800}
 .rstate{margin-top:8px;text-align:center}.rstate .pill{font-size:14px;padding:5px 14px}
-.fgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.fgrid label{font-size:12px;color:var(--mut);display:flex;flex-direction:column;gap:3px}.fgrid select,.fgrid input{width:100%}
+.fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.fgrid label{font-size:12px;color:var(--mut);display:flex;flex-direction:column;gap:3px}.fgrid select,.fgrid input{width:100%;min-width:0;max-width:100%;-webkit-appearance:none;appearance:none;font-size:14px}.fgrid label{min-width:0}
+.fc{border:1px solid #4a3d85;border-radius:14px;padding:10px;margin:10px 0;background:linear-gradient(180deg,#221a4a,#140f2c)}.fc .fh{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:8px;font-size:14px}
+.fr5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.fr5>div{background:#0d0a1c99;border:1px solid var(--line);border-radius:8px;padding:5px 2px;text-align:center}.fr5 .g{border-color:#ffd16688;background:#ffd16610}.fr5 .rl{font-size:9px}.fr5 .rr{font-size:9px}.fr5 .ball{width:19px;height:19px;font-size:10px;margin:1px}.fr5 .bs{display:flex;flex-wrap:wrap;justify-content:center}
+.fpl{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:13px;gap:6px;flex-wrap:wrap}
 #fchips .chip{padding:8px 12px;font-size:14px}#fchips .chip.on{background:var(--acc);border-color:var(--acc)}#fpat tr{cursor:pointer}#fpat tr.on td{background:#7c5cff33}
 .legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--mut);align-items:center;margin-bottom:8px}.legend span{display:inline-flex;align-items:center;gap:4px}
 .list{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow:auto}
@@ -203,12 +206,12 @@ function cycleCard(c,E,edit,dd){const r=c.r,a=c.start,tom=c.target>MAX;let state
  else if(!r.plays.length)state=`<span class="pill wait">NON SI GIOCA</span>`;
  else if(c.hit===null)state=`<span class="pill" style="color:var(--gold)">DA GIOCARE</span>`;
  else state=c.hit?`<span class="pill ok">PRESO${c.pos?" · "+c.pos+"°":""}</span>`:`<span class="pill ko">PERSO</span>`;
- const refs=REFK.map((o,i)=>{const n=a+o,e=E[n];return `<${edit?"button":"div"} class="ref ${i?"":"r1"} ${edit&&n===RACE?"cur":""}" ${edit?`data-go="${n}"`:""}><span class="rl">${REFN[i]}</span><span class="rr">#${n} · ${fmtT(n)}</span><span class="rb">${complete(e)?balls(trioOf(e),[],true,yOf(E,n),true):'<span class="mut">—</span>'}</span></${edit?"button":"div"}>`}).join("");
+ const refs=REFK.map((o,i)=>{const n=a+o,e=E[n];return `<${edit?"button":"div"} class="ref ${i?"":"r1"} ${edit&&n===RACE?"cur":""}" ${edit?`data-go="${n}"`:""}><span class="rl">${REFN[i]}</span><span class="rr">#${n} · ${fmtT(n)}</span><span class="rb">${complete(e)?balls(trioOf(e),[],false,yOf(E,n),true):'<span class="mut">—</span>'}</span></${edit?"button":"div"}>`}).join("");
  const pe=E[c.target],playLbl=tom?`#1 di domani <span class="mut">(${fmtDay(nextDay(dd||(edit?DAY:STDAY)))})</span>`:`#${c.target} <span class="mut">${fmtT(c.target)}</span>`;
  let res;
  if(!r)res=`<div class="mut">Servono le corse ${c.missing.map(n=>"#"+n).join(", ")} per calcolare la giocata.</div>`;
  else res=`<div class="resrow"><div><div class="rl">Da giocare</div>${r.plays.length?`<div class="playballs">${balls(r.plays,complete(pe)?trioOf(pe):[],false)}</div>`:'<div class="mut">nessun numero</div>'}</div>
-  <div style="text-align:right"><div class="rl">Corsa di gioco</div><div class="pr">${playLbl}</div><div>${complete(pe)?balls(trioOf(pe),r.plays,true,[],true):'<span class="mut">arrivo non inserito</span>'}</div></div></div>
+  <div style="text-align:right"><div class="rl">Corsa di gioco</div><div class="pr">${playLbl}</div><div>${complete(pe)?balls(trioOf(pe),r.plays,false,[],true):'<span class="mut">arrivo non inserito</span>'}</div></div></div>
   <div class="why"><b class="gold">${r.rule}</b> · ${esc(r.why)} <span class="mut">(Y∩2ª=${r.m2}, Y∩3ª=${r.m3})</span>${r.ambiguous?`<br><span class="mut">R8 in prova · A: ${r.playsA.join(",")}${c.hA!==null?(c.hA?" ✓":" ✗"):""} · B: ${r.playsB.join(",")}${c.hB!==null?(c.hB?" ✓":" ✗"):""}</span>`:""}</div>`;
  return `<div class="cblock"><div class="ch"><div>${dd?`<span class="key k1">${fmtDay(dd)}</span> `:""}<b>Ciclo ${c.i+1}</b> <span class="mut">corse ${a}→${a+L-1}</span></div>${state}</div>
  <div class="refs">${refs}</div>${sameLine(E,a)}
@@ -268,21 +271,36 @@ const patOf=(x,ex)=>ex?x.a+"-"+x.b:Math.max(x.a,x.b)+"-"+Math.min(x.a,x.b);
 function matchPat(x,p,ex){if(p==="3-x")return x.a===3||x.b===3;return patOf(x,ex)===p}
 function fillSel(){const o=v=>`<option value="">qualsiasi</option>`+[0,1,2,3].map(n=>`<option>${n}</option>`).join("");["fa","fb","fu"].forEach(id=>{if(!$(id).options.length)$(id).innerHTML=o()});
  const rs=[...new Set(allCycles().map(x=>x.rule).filter(Boolean))].sort(),cur=$("fr").value;$("fr").innerHTML=`<option value="">tutte</option>`+rs.map(r=>`<option ${r===cur?"selected":""}>${r}</option>`).join("")}
+function activePat(){const ex=$("fexact").checked;if(FP)return FP;const a=$("fa").value,b=$("fb").value;if(a===""||b==="")return null;const k=ex?a+"-"+b:Math.max(+a,+b)+"-"+Math.min(+a,+b);return k}
+function setPat(p,keep){const ex=$("fexact").checked;if(!keep)["fu","fc","fr","fo","fd1","fd2"].forEach(id=>$(id).value="");
+ $("fa").value="";$("fb").value="";FP=null;if(!p)return;
+ if(p==="3-x"){FP=p;return}const[x,y]=p.split("-");
+ if(ex||x===y){$("fa").value=x;$("fb").value=y}else FP=p}
+function fcard(x){const c=x.c,E=x.E,r=c.r,a=c.start,tom=c.target>MAX,pe=E[c.target];
+ const box=(lab,n,inner,cls="")=>`<div class="${cls}"><div class="rl">${lab}</div><div class="rr">${n}</div><div class="bs">${inner}</div></div>`;
+ const tr=n=>complete(E[n])?balls(trioOf(E[n]),[],false,yOf(E,n)):'<span class="mut">—</span>';
+ const st=x.o==="PRESO"?`<span class="pill ok">PRESO${c.pos?" · "+c.pos+"°":""}</span>`:x.o==="PERSO"?`<span class="pill ko">PERSO</span>`:`<span class="pill wait">${x.o.toUpperCase()}</span>`;
+ return `<div class="fc"><div class="fh"><div><span class="key k1">${fmtDay(x.d)}</span> <b>Ciclo ${c.i+1}</b> <span class="mut" style="font-size:12px">${x.a}-${x.b}${x.u===null?"":" · ult "+x.u}</span></div>${st}</div>
+ <div class="fr5">${box("1ª","#"+a,tr(a))}${box("2ª","#"+(a+SUB),tr(a+SUB))}${box("3ª","#"+(a+2*SUB),tr(a+2*SUB))}${box("Ultima","#"+(a+L-1),tr(a+L-1))}${box("Risultato",tom?"#1 dom.":"#"+c.target,complete(pe)?balls(trioOf(pe),r&&r.plays.length?r.plays:[],false):'<span class="mut">—</span>',"g")}</div>
+ <div class="fpl"><span>Giocati: ${r&&r.plays.length?`<b class="gold">${r.plays.join(", ")}</b>`:'<span class="mut">nessuno</span>'}</span><span class="mut">${r?r.rule:""}</span></div></div>`}
 function renderFilt(){fillSel();const ex=$("fexact").checked,all=allCycles(),g=id=>$(id).value;
- $("fchips").innerHTML=`<button class="chip ${FP?"":"on"}" data-p="">tutti</button>`+PATS.map(p=>`<button class="chip ${FP===p?"on":""}" data-p="${p}">${p}</button>`).join("");
- const base=all.filter(x=>(!g("fa")||x.a===+g("fa"))&&(!g("fb")||x.b===+g("fb"))&&(!g("fu")||x.u===+g("fu"))&&(!g("fc")||x.c.i+1===+g("fc"))&&(!g("fr")||x.rule===g("fr"))&&(!g("fo")||x.o===g("fo"))&&(!g("fd1")||x.d>=g("fd1"))&&(!g("fd2")||x.d<=g("fd2")));
+ const AP=activePat();
+ $("fchips").innerHTML=`<button class="chip ${AP?"":"on"}" data-p="">tutti</button>`+PATS.map(p=>`<button class="chip ${AP===p?"on":""}" data-p="${p}">${p}</button>`).join("");
+ // base: tutti i filtri tranne lo schema (2ª/3ª)
+ const base=all.filter(x=>(!g("fu")||x.u===+g("fu"))&&(!g("fc")||x.c.i+1===+g("fc"))&&(!g("fr")||x.rule===g("fr"))&&(!g("fo")||x.o===g("fo"))&&(!g("fd1")||x.d>=g("fd1"))&&(!g("fd2")||x.d<=g("fd2")));
+ const sel=x=>FP?matchPat(x,FP,ex):(!g("fa")||x.a===+g("fa"))&&(!g("fb")||x.b===+g("fb"));
  const P={};base.forEach(x=>{const k=patOf(x,ex);(P[k]=P[k]||[]).push(x)});
  const tot=xs=>{const pl=xs.filter(x=>x.c.hit!==null),w=pl.filter(x=>x.c.hit).length;return{n:xs.length,pl:pl.length,w,l:pl.length-w,ns:xs.filter(x=>x.o==="non si gioca").length,dg:xs.filter(x=>x.o==="da giocare").length,wr:pl.length?Math.round(w/pl.length*100)+"%":"—"}};
  const keys=Object.keys(P).sort((a,b)=>P[b].length-P[a].length||a.localeCompare(b));
- $("fpat").innerHTML=keys.length?`<tr><th>Schema ${ex?"(2ª-3ª)":""}</th><th>Cicli</th><th>Giocati</th><th>Presi</th><th>Resa</th></tr>`+keys.map(k=>{const t=tot(P[k]);return `<tr data-p="${k}" class="${FP===k?"on":""}"><td><b>${k}</b></td><td>${t.n}</td><td>${t.pl}</td><td class="ok">${t.w}</td><td class="gold">${t.wr}</td></tr>`}).join(""):`<tr><td class="empty">Nessun ciclo con 1ª, 2ª e 3ª inserite.</td></tr>`;
- const res=FP?base.filter(x=>matchPat(x,FP,ex)):base,t=tot(res);
+ $("fpat").innerHTML=keys.length?`<tr><th>Schema ${ex?"(2ª-3ª)":""}</th><th>Cicli</th><th>Giocati</th><th>Presi</th><th>Resa</th></tr>`+keys.map(k=>{const t=tot(P[k]);return `<tr data-p="${k}" class="${AP===k?"on":""}"><td><b>${k}</b></td><td>${t.n}</td><td>${t.pl}</td><td class="ok">${t.w}</td><td class="gold">${t.wr}</td></tr>`}).join(""):`<tr><td class="empty">Nessun ciclo con 1ª, 2ª e 3ª inserite.</td></tr>`;
+ const res=base.filter(sel),t=tot(res);
  const st=(v,lab,cls="")=>`<div class="stat"><b class="${cls}">${v}</b><span>${lab}</span></div>`;
  $("ftot").innerHTML=st(t.n,"cicli")+st(t.pl,"giocati")+st(t.w,"presi","ok")+st(t.l,"persi","ko")+st(t.wr,"resa","gold")+st(t.ns,"non si gioca")+st(t.dg,"da giocare");
- $("fn").textContent=res.length;
- $("flist").innerHTML=res.length?LEGEND+res.slice().reverse().map(x=>`<div class="mut" style="font-size:12px;margin-top:10px">Uguali alla 1ª → 2ª: <b>${x.a}</b> · 3ª: <b>${x.b}</b> · Ultima: <b>${x.u===null?"—":x.u}</b></div>`+cycleCard(x.c,x.E,false,x.d)).join(""):`<div class="empty">Nessun ciclo corrisponde ai filtri.</div>`}
-$("fchips").addEventListener("click",e=>{const t=e.target.closest("[data-p]");if(t){FP=t.dataset.p||null;renderFilt()}});
-$("fpat").addEventListener("click",e=>{const t=e.target.closest("tr[data-p]");if(t){FP=FP===t.dataset.p?null:t.dataset.p;renderFilt()}});
-["fexact","fa","fb","fu","fc","fr","fo","fd1","fd2"].forEach(id=>$(id).addEventListener("change",()=>{if(id==="fexact")FP=null;renderFilt()}));
+ $("fn").textContent=res.length+(AP?" · schema "+AP+(ex?" (ordine esatto)":""):"");
+ $("flist").innerHTML=res.length?LEGEND+res.slice().reverse().map(fcard).join(""):`<div class="empty">Nessun ciclo corrisponde ai filtri.</div>`}
+$("fchips").addEventListener("click",e=>{const t=e.target.closest("[data-p]");if(t){setPat(t.dataset.p||null,false);renderFilt()}});
+$("fpat").addEventListener("click",e=>{const t=e.target.closest("tr[data-p]");if(t){setPat(activePat()===t.dataset.p?null:t.dataset.p,true);renderFilt()}});
+["fexact","fa","fb","fu","fc","fr","fo","fd1","fd2"].forEach(id=>$(id).addEventListener("change",()=>{if(id==="fexact"){$("fa").value="";$("fb").value=""}FP=null;renderFilt()}));
 $("freset").onclick=()=>{FP=null;["fa","fb","fu","fc","fr","fo","fd1","fd2"].forEach(id=>$(id).value="");$("fexact").checked=false;renderFilt()};
 $("exp").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(DB,null,1)],{type:"application/json"}));a.download="cavalli-backup-"+today()+".json";a.click()};
 $("impb").onclick=()=>$("impf").click();
